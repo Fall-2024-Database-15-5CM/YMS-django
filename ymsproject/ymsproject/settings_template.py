@@ -3,7 +3,7 @@ pymysql.install_as_MySQLdb()
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = '' #안알랴줌
+SECRET_KEY = ''
 DEBUG = True
 
 ALLOWED_HOSTS = []
