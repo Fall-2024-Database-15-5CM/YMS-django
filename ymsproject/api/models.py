@@ -65,16 +65,15 @@ class Driver(models.Model):
     driver_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=30,null=False)
     license_number = models.CharField(max_length=30)
-    state = models.CharField(max_length=30)
-    phone = models.CharField(max_length=13)
-    adress = models.CharField(max_length=50)
-    email = models.CharField(max_length=30)
-    status = models.CharField(max_length=50)
+    phone = models.CharField(max_length=13,default='')
+    adress = models.CharField(max_length=50,default='')
+    email = models.CharField(max_length=30,default='')
+    state = models.CharField(max_length=30,default='')
+    status = models.CharField(max_length=50,default='')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     thumbnail = models.BinaryField(null=True, blank=True)  # 썸네일 필드 추가
     image = models.BinaryField(null=True, blank=True)  # 이미지 필드 추가
-    new_temp_field = models.BinaryField(null=True, blank=True)  # 임시 필드 추가
 
 class Transaction(models.Model):
     transaction_id = models.AutoField(primary_key=True)
