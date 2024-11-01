@@ -10,14 +10,21 @@ urlpatterns = [
     path('yards/', views.get_yards, name='get_yards'),
     ## slots
     path('slots/', views.get_slots, name='get_slots'),
+    path('slot/yard_slot_info/',views.get_yard_slot_info, name ='get_yard_slot_info'),
+    # path('slot/slot_updated/',views.get_slot_updated, name ='get_slot_updated'),
     ## strucures
     path('structures/', views.get_structures, name='get_structures'),
     ## Driver
     path('drivers/', views.get_drivers, name='get_drivers'),
     path('sorted_drivers/', views.get_sorted_drivers, name='get_sorted_drivers'),
     path('create_driver/', views.create_driver, name='create_driver'),
+    path('driver_details/', views.get_driver_details, name='driver_details'),
+    
     ## Transaction
     path('transactions/', views.get_transactions, name='get_transactions'),
+    # path('transactions/updated_transactions/', views.get_updated_transactions, name='get_updated_transactions'),
+    ## Equipments
+    path('equipment/updated_equipments/',views.get_updated_equipments,name='get_updated_equipments'),
     ## truck
     path('trucks/', views.get_trucks, name='get_trucks'),
     ## chassis

@@ -30,10 +30,25 @@ class DriverSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only=False)  # 읽기 전용 해제
     thumbnail = serializers.ModelField(model_field=Driver._meta.get_field('thumbnail'), read_only=False)
     image = serializers.ModelField(model_field=Driver._meta.get_field('image'), read_only=False)
+    
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        exclude_fields = kwargs.pop('exclude_fields', None)
+        super(DriverSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+        if exclude_fields is not None:
+            for field_name in exclude_fields:
+                if field_name in self.fields:
+                    self.fields.pop(field_name)
+
     class Meta:
         model = Driver
         fields = '__all__'
-
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:

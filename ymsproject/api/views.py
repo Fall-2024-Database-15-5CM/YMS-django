@@ -6,7 +6,13 @@ from .serializer import UserSerializer, DivisionSerializer, YardSerializer, Slot
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import base64
+from datetime import datetime
 from django.core.files.base import ContentFile
+from django.db.models import Min, Max, F
+from django.db import connection
+from django.shortcuts import get_object_or_404
+
+
 def home(request):
     return HttpResponse("YMS API")
 
@@ -65,6 +71,8 @@ def get_slots(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# Slot
+
 
 # Structure
 @api_view(['GET', 'POST'])
@@ -99,7 +107,6 @@ def get_sorted_drivers(request):
     # Query parameters 받기
     order_by = request.query_params.get('order_by', 'name')  # 기본 정렬 필드
     page = request.query_params.get('page', 1)  # 기본 페이지 번호
-    
     # Driver 쿼리셋 정렬 적용
     drivers = Driver.objects.all().order_by(order_by)
 
@@ -111,9 +118,20 @@ def get_sorted_drivers(request):
         drivers_page = paginator.page(1)
     except EmptyPage:
         drivers_page = paginator.page(paginator.num_pages)
+    
 
-    # 결과 직렬화 및 반환
-    serializer = DriverSerializer(drivers_page, many=True)
+    serializer = DriverSerializer(drivers_page, many=True, fields=['driver_id', 'name', 'phone', 'updated_at', 'state', 'thumbnail'])
+    data = serializer.data
+
+    # 각 드라이버의 'created_at' 필드 변환
+    for driver in data:
+        iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
+        if iso_time_str:
+            dt = datetime.strptime(iso_time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+            readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
+            driver["updated_at"] = readable_format
+
+
     return Response({
         'page': int(page),  # 현재 페이지 번호 반환
         'total_pages': paginator.num_pages,  # 전체 페이지 수
@@ -121,12 +139,26 @@ def get_sorted_drivers(request):
         'drivers': serializer.data  # 현재 페이지의 드라이버 데이터
     }, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def get_driver_details(request):
+    # 쿼리 파라미터에서 driver_id 가져오기
+    driver_id = request.query_params.get('driver_id')
+    
+    # driver_id가 없을 때의 처리
+    if not driver_id:
+        return Response({"error": "driver_id 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # driver_id로 드라이버 찾기 (존재하지 않으면 404 에러 발생)
+    driver = get_object_or_404(Driver, pk=driver_id)
+    
+    # 직렬화 시 'thumbnail'을 제외한 필드만 포함
+    serializer = DriverSerializer(driver, exclude_fields=['thumbnail'])
+    
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def create_driver(request):
     serializer = DriverSerializer(data=request.data)
-
-    print(request)
-    print(serializer)
     if serializer.is_valid():
         try:
             # Base64 이미지와 썸네일 디코딩 후 저장
@@ -174,6 +206,49 @@ def get_transactions(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+@api_view(['GET'])
+def get_updated_equipments(request):
+    try:
+        # 쿼리 파라미터에서 yard_id와 updated_at 가져오기
+        yard_id = request.query_params.get('yard_id')
+        updated_at = request.query_params.get('updated_at', datetime(2000,1,1))
+        
+        if not yard_id:
+            return Response({'error': 'yard_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Slot 테이블에서 주어진 yard_id에 해당하는 slot_id 가져오기
+        slot_ids = Slot.objects.filter(yard_id=yard_id).values_list('slot_id', flat=True)
+
+        # 각 테이블(Truck, Chassis, Container, Trailer)에서 해당 slot_id와 updated_at 이후의 레코드 조회
+        trucks = Truck.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
+        chassis = Chassis.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
+        containers = Container.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
+        trailers = Trailer.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
+
+        # 각 시리얼라이저를 사용해 데이터를 직렬화
+        truck_serializer = TruckSerializer(trucks, many=True)
+        chassis_serializer = ChassisSerializer(chassis, many=True)
+        container_serializer = ContainerSerializer(containers, many=True)
+        trailer_serializer = TrailerSerializer(trailers, many=True)
+
+        # 모든 데이터를 합쳐서 반환
+        combined_data = {"count" : len(truck_serializer.data)+len(chassis_serializer.data)+len(container_serializer.data)+len(trailer_serializer.data),
+                         'data' : {
+                                'trucks': truck_serializer.data,
+                                'chassis': chassis_serializer.data,
+                                'containers': container_serializer.data,
+                                'trailers': trailer_serializer.data
+                                }
+                         }
+
+        return Response(combined_data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        # 오류 발생 시 에러 메시지 반환
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 # Truck
 @api_view(['GET', 'POST'])
@@ -258,3 +333,60 @@ def get_slot_updates(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+@api_view(['GET'])
+def get_yard_slot_info(request):
+    try:
+        # 쿼리 파라미터에서 yard_id 가져오기
+        yard_id = request.query_params.get('yard_id')
+        if not yard_id:
+            return Response({'error': 'yard_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # SQL 쿼리 작성 - min_x, min_y, max_x, max_y 계산
+        sql = """
+            SELECT LEAST(parking_min.min_x, structure_min.min_x) AS min_x,
+                   LEAST(parking_min.min_y, structure_min.min_y) AS min_y,
+                   GREATEST(parking_max.max_x, structure_max.max_x) AS max_x,
+                   GREATEST(parking_max.max_y, structure_max.max_y) AS max_y
+            FROM
+                (SELECT MIN(x) AS min_x, MIN(y) AS min_y FROM api_slot WHERE yard_id = %s) AS parking_min,
+                (SELECT MIN(x) AS min_x, MIN(y) AS min_y FROM api_structure WHERE yard_id = %s) AS structure_min,
+                (SELECT MAX(x + w) AS max_x, MAX(y + h) AS max_y FROM api_slot WHERE yard_id = %s) AS parking_max,
+                (SELECT MAX(x + w) AS max_x, MAX(y + h) AS max_y FROM api_structure WHERE yard_id = %s) AS structure_max;
+        """
+
+        # 데이터베이스 연결 및 쿼리 실행
+        with connection.cursor() as cursor:
+            cursor.execute(sql, [yard_id, yard_id, yard_id, yard_id])
+            row = cursor.fetchone()
+
+        # 결과가 존재하지 않을 때 처리
+        if not row:
+            return Response({'error': 'No data found for the given yard_id'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 응답 데이터 작성 (min/max 좌표 정보)
+        response_data = {
+            'min_x': row[0],
+            'min_y': row[1],
+            'max_x': row[2],
+            'max_y': row[3]
+        }
+
+        # Slot 테이블에서 모든 데이터를 가져오기
+        slot_data = Slot.objects.filter(yard_id=yard_id)
+        slot_serializer = SlotSerializer(slot_data, many=True)
+        response_data['slot_data'] = slot_serializer.data
+
+        # Structure 테이블에서 모든 데이터를 가져오기
+        structure_data = Structure.objects.filter(yard_id=yard_id)
+        structure_serializer = StructureSerializer(structure_data, many=True)
+        response_data['structure_data'] = structure_serializer.data
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        # 오류 발생 시 에러 메시지 반환
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
