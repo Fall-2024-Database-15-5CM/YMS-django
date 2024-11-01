@@ -59,21 +59,77 @@ class TruckSerializer(serializers.ModelSerializer):
     class Meta:
         model = Truck
         fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        exclude_fields = kwargs.pop('exclude_fields', None)
+        super(DriverSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+        if exclude_fields is not None:
+            for field_name in exclude_fields:
+                if field_name in self.fields:
+                    self.fields.pop(field_name)
 
 class ChassisSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chassis
         fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        exclude_fields = kwargs.pop('exclude_fields', None)
+        super(DriverSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+        if exclude_fields is not None:
+            for field_name in exclude_fields:
+                if field_name in self.fields:
+                    self.fields.pop(field_name)
 
 class ContainerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Container
         fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        exclude_fields = kwargs.pop('exclude_fields', None)
+        super(DriverSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+        if exclude_fields is not None:
+            for field_name in exclude_fields:
+                if field_name in self.fields:
+                    self.fields.pop(field_name)
 
 class TrailerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trailer
         fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        exclude_fields = kwargs.pop('exclude_fields', None)
+        super(DriverSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+        if exclude_fields is not None:
+            for field_name in exclude_fields:
+                if field_name in self.fields:
+                    self.fields.pop(field_name)
 
 class MaintenanceSerializer(serializers.ModelSerializer):
     class Meta:
