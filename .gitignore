@@ -3,3 +3,4 @@
 *.pyc
 /ymsproject/api/migrations
 run.txt
+/.venv

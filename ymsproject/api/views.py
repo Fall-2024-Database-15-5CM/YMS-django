@@ -390,3 +390,38 @@ def get_yard_slot_info(request):
     except Exception as e:
         # 오류 발생 시 에러 메시지 반환
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+# get_equipment_details
+@api_view(['GET'])
+def get_equipment_details(request):
+    # Retrieve equipment_id from query parameters
+    equipment_id = request.query_params.get('equipment_id')
+    
+    # Handle missing equipment_id
+    if not equipment_id:
+        return Response({"error": "equipment_id 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Search for the equipment based on equipment_id
+    equipment1 = Truck.objects.filter(truck_id=equipment_id).first()
+    equipment2 = Chassis.objects.filter(chassis_id=equipment_id).first()
+    equipment3 = Container.objects.filter(container_id=equipment_id).first()
+    equipment4 = Trailer.objects.filter(trailer_id=equipment_id).first()
+
+    # Check each equipment type and serialize
+    if equipment1:
+        serializer = TruckSerializer(equipment1)  # No `many=True` for single instance
+        return Response({"type": "truck", "data": serializer.data}, status=status.HTTP_200_OK)
+    elif equipment2:
+        serializer = ChassisSerializer(equipment2)
+        return Response({"type": "chassis", "data": serializer.data}, status=status.HTTP_200_OK)
+    elif equipment3:
+        serializer = ContainerSerializer(equipment3)
+        return Response({"type": "container", "data": serializer.data}, status=status.HTTP_200_OK)
+    elif equipment4:
+        serializer = TrailerSerializer(equipment4)
+        return Response({"type": "trailer", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+    # If no equipment is found, return a 404 response
+    return Response({"error": "장비를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+

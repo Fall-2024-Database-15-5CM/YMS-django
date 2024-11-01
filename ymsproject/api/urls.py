@@ -25,6 +25,7 @@ urlpatterns = [
     # path('transactions/updated_transactions/', views.get_updated_transactions, name='get_updated_transactions'),
     ## Equipments
     path('equipment/updated_equipments/',views.get_updated_equipments,name='get_updated_equipments'),
+    path('equipment/equipment_details/',views.get_equipment_details,name='get_equipment_details'),
     ## truck
     path('trucks/', views.get_trucks, name='get_trucks'),
     ## chassis
