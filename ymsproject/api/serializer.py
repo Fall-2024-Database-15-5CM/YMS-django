@@ -62,7 +62,7 @@ class TruckSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', None)
         exclude_fields = kwargs.pop('exclude_fields', None)
-        super(DriverSerializer, self).__init__(*args, **kwargs)
+        super(TruckSerializer, self).__init__(*args, **kwargs)
 
         if fields is not None:
             allowed = set(fields)
@@ -81,7 +81,7 @@ class ChassisSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', None)
         exclude_fields = kwargs.pop('exclude_fields', None)
-        super(DriverSerializer, self).__init__(*args, **kwargs)
+        super(ChassisSerializer, self).__init__(*args, **kwargs)
 
         if fields is not None:
             allowed = set(fields)
@@ -100,7 +100,7 @@ class ContainerSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', None)
         exclude_fields = kwargs.pop('exclude_fields', None)
-        super(DriverSerializer, self).__init__(*args, **kwargs)
+        super(ContainerSerializer, self).__init__(*args, **kwargs)
 
         if fields is not None:
             allowed = set(fields)
@@ -119,7 +119,7 @@ class TrailerSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', None)
         exclude_fields = kwargs.pop('exclude_fields', None)
-        super(DriverSerializer, self).__init__(*args, **kwargs)
+        super(TrailerSerializer, self).__init__(*args, **kwargs)
 
         if fields is not None:
             allowed = set(fields)
