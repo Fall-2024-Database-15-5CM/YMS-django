@@ -63,7 +63,7 @@ class Structure(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class Driver(models.Model):
-    driver_id = models.AutoField(primary_key=True)
+    driver_id = models.CharField(max_length=16, primary_key=True)
     name = models.CharField(max_length=30,null=False)
     license_number = models.CharField(max_length=30)
     phone = models.CharField(max_length=13,default='')
@@ -77,7 +77,7 @@ class Driver(models.Model):
     image = models.BinaryField(null=True, blank=True)  # 이미지 필드 추가
 
 class Transaction(models.Model):
-    transaction_id = models.AutoField(primary_key=True)
+    transaction_id = models.CharField(max_length=16, primary_key=True)
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     source = models.ForeignKey(Yard, related_name='source', on_delete=models.SET_NULL, null=True)
     destination = models.ForeignKey(Yard, related_name='destination', on_delete=models.SET_NULL, null=True)
@@ -87,14 +87,14 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
 class Truck(models.Model):
-    truck_id = models.AutoField(primary_key=True)
+    truck_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
 class Chassis(models.Model):
-    chassis_id = models.AutoField(primary_key=True)
+    chassis_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
     container_id = models.IntegerField(null=True)  # Placeholder for foreign key relation
@@ -102,7 +102,7 @@ class Chassis(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class Container(models.Model):
-    container_id = models.AutoField(primary_key=True)
+    container_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
     container_size = models.CharField(max_length=10)
@@ -110,7 +110,7 @@ class Container(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class Trailer(models.Model):
-    trailer_id = models.AutoField(primary_key=True)
+    trailer_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
     trailer_size = models.CharField(max_length=10)

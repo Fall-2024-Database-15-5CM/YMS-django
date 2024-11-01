@@ -233,9 +233,18 @@ def get_updated_equipments(request):
         chassis_serializer = ChassisSerializer(chassis, many=True)
         container_serializer = ContainerSerializer(containers, many=True)
         trailer_serializer = TrailerSerializer(trailers, many=True)
+        all_updated_times = []
+        all_updated_times += [data['updated_at'] for data in truck_serializer.data]
+        all_updated_times += [data['updated_at'] for data in chassis_serializer.data]
+        all_updated_times += [data['updated_at'] for data in container_serializer.data]
+        all_updated_times += [data['updated_at'] for data in trailer_serializer.data]
+
+        # all_updated_times에서 가장 큰 값을 찾음
+        max_updated_time = max(all_updated_times) if all_updated_times else None
 
         # 모든 데이터를 합쳐서 반환
         combined_data = {"count" : len(truck_serializer.data)+len(chassis_serializer.data)+len(container_serializer.data)+len(trailer_serializer.data),
+                         "updated_time": max_updated_time,
                          'data' : {
                                 'trucks': truck_serializer.data,
                                 'chassis': chassis_serializer.data,
