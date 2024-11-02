@@ -211,7 +211,7 @@ def get_transactions(request):
 
 @api_view(['GET'])
 def get_updated_equipments(request):
-    try:
+    # try:
         # 쿼리 파라미터에서 yard_id와 updated_at 가져오기
         yard_id = request.query_params.get('yard_id')
         updated_at = request.query_params.get('updated_at', datetime(2000,1,1))
@@ -220,44 +220,65 @@ def get_updated_equipments(request):
             return Response({'error': 'yard_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Slot 테이블에서 주어진 yard_id에 해당하는 slot_id 가져오기
-        slot_ids = Slot.objects.filter(yard_id=yard_id).values_list('slot_id', flat=True)
+        slot_ids = list(Slot.objects.filter(yard_id=yard_id).values_list('slot_id', flat=True))
 
         # 각 테이블(Truck, Chassis, Container, Trailer)에서 해당 slot_id와 updated_at 이후의 레코드 조회
-        trucks = Truck.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
-        chassis = Chassis.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
-        containers = Container.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
-        trailers = Trailer.objects.filter(slot_id__in=slot_ids, updated_at__gt=updated_at)
+        trucks = Truck.objects.filter(slot_id__in=slot_ids)#, updated_at__gt=updated_at)
+        chassis = Chassis.objects.filter(slot_id__in=slot_ids)#, updated_at__gt=updated_at)
+        containers = Container.objects.filter(slot_id__in=slot_ids)#, updated_at__gt=updated_at)
+        trailers = Trailer.objects.filter(slot_id__in=slot_ids)#, updated_at__gt=updated_at)
 
         # 각 시리얼라이저를 사용해 데이터를 직렬화
         truck_serializer = TruckSerializer(trucks, many=True)
         chassis_serializer = ChassisSerializer(chassis, many=True)
         container_serializer = ContainerSerializer(containers, many=True)
         trailer_serializer = TrailerSerializer(trailers, many=True)
+        # 모든 slot_id 중에서 비어 있는 슬롯을 식별
+        occupied_slot_ids = set()
+        print(truck_serializer.data)
+        occupied_slot_ids.update([data['slot'] for data in truck_serializer.data])
+        occupied_slot_ids.update([data['slot'] for data in chassis_serializer.data])
+        occupied_slot_ids.update([data['slot'] for data in container_serializer.data])
+        occupied_slot_ids.update([data['slot'] for data in trailer_serializer.data])
+
+        empty_slot_ids = [slot_id for slot_id in slot_ids if slot_id not in occupied_slot_ids]
+        empty_slots = [{"slot_id":slot_id} for slot_id in empty_slot_ids]
+
+        # 각 시리얼라이저를 사용해 데이터를 직렬화
+        truck_serializer_time = TruckSerializer(trucks.filter(updated_at__gt=updated_at), many=True)
+        chassis_serializer_time = ChassisSerializer(chassis.filter(updated_at__gt=updated_at), many=True)
+        container_serializer_time = ContainerSerializer(containers.filter(updated_at__gt=updated_at), many=True)
+        trailer_serializer_time = TrailerSerializer(trailers.filter(updated_at__gt=updated_at), many=True)
+        print(empty_slots)
+
+        # 업데이트된 시간 수집
         all_updated_times = []
-        all_updated_times += [data['updated_at'] for data in truck_serializer.data]
-        all_updated_times += [data['updated_at'] for data in chassis_serializer.data]
-        all_updated_times += [data['updated_at'] for data in container_serializer.data]
-        all_updated_times += [data['updated_at'] for data in trailer_serializer.data]
+        all_updated_times += [data['updated_at'] for data in truck_serializer_time.data]
+        all_updated_times += [data['updated_at'] for data in chassis_serializer_time.data]
+        all_updated_times += [data['updated_at'] for data in container_serializer_time.data]
+        all_updated_times += [data['updated_at'] for data in trailer_serializer_time.data]
 
         # all_updated_times에서 가장 큰 값을 찾음
         max_updated_time = max(all_updated_times) if all_updated_times else None
 
         # 모든 데이터를 합쳐서 반환
-        combined_data = {"count" : len(truck_serializer.data)+len(chassis_serializer.data)+len(container_serializer.data)+len(trailer_serializer.data),
-                         "updated_time": max_updated_time,
-                         'data' : {
-                                'trucks': truck_serializer.data,
-                                'chassis': chassis_serializer.data,
-                                'containers': container_serializer.data,
-                                'trailers': trailer_serializer.data
-                                }
-                         }
+        combined_data = {
+            "count": len(truck_serializer_time.data) + len(chassis_serializer_time.data) + len(container_serializer_time.data) + len(trailer_serializer_time.data),
+            "updated_time": max_updated_time,
+            'data': {
+                'trucks': truck_serializer.data,
+                'chassis': chassis_serializer.data,
+                'containers': container_serializer.data,
+                'trailers': trailer_serializer.data,
+                "empty" : empty_slots
+            }
+        }
 
         return Response(combined_data, status=status.HTTP_200_OK)
+    
+    # except Exception as e:
+    #     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    except Exception as e:
-        # 오류 발생 시 에러 메시지 반환
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 # Truck
 @api_view(['GET', 'POST'])
