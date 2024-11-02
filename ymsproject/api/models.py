@@ -82,7 +82,8 @@ class Transaction(models.Model):
     source = models.ForeignKey(Yard, related_name='source', on_delete=models.SET_NULL, null=True)
     destination = models.ForeignKey(Yard, related_name='destination', on_delete=models.SET_NULL, null=True)
     equipment_id = models.IntegerField()  # ForeignKey placeholder for dynamic relations
-    in_out = models.CharField(max_length=50)
+    yard_in = models.CharField(max_length=14)
+    yard_out = models.CharField(max_length=14)
     datetime = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now)
 
