@@ -111,7 +111,7 @@ def get_sorted_drivers(request):
     drivers = Driver.objects.all().order_by(order_by)
 
     # 페이지네이션 (8개씩 나누기)
-    paginator = Paginator(drivers, 9)
+    paginator = Paginator(drivers, 12)
     try:
         drivers_page = paginator.page(page)
     except PageNotAnInteger:
@@ -235,7 +235,7 @@ def get_updated_equipments(request):
         trailer_serializer = TrailerSerializer(trailers, many=True)
         # 모든 slot_id 중에서 비어 있는 슬롯을 식별
         occupied_slot_ids = set()
-        print(truck_serializer.data)
+        # print(truck_serializer.data)
         occupied_slot_ids.update([data['slot'] for data in truck_serializer.data])
         occupied_slot_ids.update([data['slot'] for data in chassis_serializer.data])
         occupied_slot_ids.update([data['slot'] for data in container_serializer.data])
@@ -249,7 +249,7 @@ def get_updated_equipments(request):
         chassis_serializer_time = ChassisSerializer(chassis.filter(updated_at__gt=updated_at), many=True)
         container_serializer_time = ContainerSerializer(containers.filter(updated_at__gt=updated_at), many=True)
         trailer_serializer_time = TrailerSerializer(trailers.filter(updated_at__gt=updated_at), many=True)
-        print(empty_slots)
+        # print(empty_slots)
 
         # 업데이트된 시간 수집
         all_updated_times = []
