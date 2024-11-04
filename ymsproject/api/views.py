@@ -208,7 +208,7 @@ def get_transactions(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
-
+#GetUpdatedEquipments
 @api_view(['GET'])
 def get_updated_equipments(request):
     # try:
@@ -367,6 +367,7 @@ def get_slot_updates(request):
 
 
 
+# YardSlotInfo
 @api_view(['GET'])
 def get_yard_slot_info(request):
     try:
@@ -455,3 +456,26 @@ def get_equipment_details(request):
     # If no equipment is found, return a 404 response
     return Response({"error": "장비를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
+
+# SlotIsUpdated
+@api_view(['GET'])
+def get_slot_isupdated(request):
+    # 쿼리 파라미터에서 yard_id와 updated_time 가져오기
+    yard_id = request.query_params.get('yard_id')
+    updated_time_str = request.query_params.get('updated_time', '2000-01-01T00:00:00Z')  # 기본값 설정
+
+    # yard_id가 없는 경우 에러 반환
+    if not yard_id:
+        return Response({'error': 'yard_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # updated_time 파싱
+    try:
+        updated_time = datetime.strptime(updated_time_str, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return Response({"error": "Invalid updated_time format. Use ISO format, e.g., 2024-11-01T10:00:00Z"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # yard_id와 updated_time 이후에 업데이트된 Slot 존재 여부 확인
+    slots_updated = Slot.objects.filter(yard_id=yard_id, updated_at__gt=updated_time).exists()
+
+    # 업데이트 여부를 result 필드로 반환
+    return Response({"result": slots_updated}, status=status.HTTP_200_OK)
