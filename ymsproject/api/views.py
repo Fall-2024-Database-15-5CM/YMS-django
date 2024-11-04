@@ -101,6 +101,7 @@ def get_drivers(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 # sorted Driver
 @api_view(['GET'])
 def get_sorted_drivers(request):
@@ -576,3 +577,56 @@ def current_slot_state(request):
     }
 
     return Response(combined_data, status=status.HTTP_200_OK)
+
+# Sorted Equipment with validation
+@api_view(['GET'])
+def get_sorted_equipments(request):
+    # Define common fields for validation
+    valid_order_fields = {'updated_at', 'state', 'slot'}
+
+    # Retrieve query parameters
+    order_by = request.query_params.get('order_by', 'updated_at')
+    page = request.query_params.get('page', 1)
+
+    # Validate order_by field
+    if order_by not in valid_order_fields:
+        return Response({
+            'error': f"Invalid order_by field. Allowed fields are: {', '.join(valid_order_fields)}"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Combine equipment data from all models
+    all_equipments = [
+        {"type": "truck", "data": truck} for truck in Truck.objects.all()
+    ] + [
+        {"type": "chassis", "data": chassis} for chassis in Chassis.objects.all()
+    ] + [
+        {"type": "container", "data": container} for container in Container.objects.all()
+    ] + [
+        {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
+    ]
+
+    # Apply sorting based on the provided order_by field
+    all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
+
+    # Apply pagination
+    paginator = Paginator(all_equipments, 10)  # 10 items per page
+    try:
+        equipments_page = paginator.page(page)
+    except PageNotAnInteger:
+        equipments_page = paginator.page(1)
+    except EmptyPage:
+        equipments_page = paginator.page(paginator.num_pages)
+
+    # Prepare data for serialization
+    result_data = [{
+        "type": equipment["type"],
+        "data": equipment["data"].id  # Pass the ID for serialization later
+    } for equipment in equipments_page]
+
+    # Return paginated and structured response
+    return Response({
+        'page': int(page),
+        'total_pages': paginator.num_pages,
+        'total_equipments': paginator.count,
+        'equipments': result_data
+    }, status=status.HTTP_200_OK)
