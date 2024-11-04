@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User, Division, Yard, Slot, Structure, Driver, Transaction, Truck, Chassis, Container, Trailer, Maintenance, SlotUpdate
-from .serializer import UserSerializer, DivisionSerializer, YardSerializer, SlotSerializer, StructureSerializer, DriverSerializer, TransactionSerializer, TruckSerializer, ChassisSerializer, ContainerSerializer, TrailerSerializer, MaintenanceSerializer, SlotUpdateSerializer
+from .serializer import UserSerializer, DivisionSerializer, YardSerializer, SlotSerializer, StructureSerializer, DriverSerializer, TransactionSerializer, TruckSerializer, ChassisSerializer, ContainerSerializer, TrailerSerializer, MaintenanceSerializer, SlotUpdateSerializer, GenericEquipmentSerializer
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import base64
@@ -617,16 +617,13 @@ def get_sorted_equipments(request):
     except EmptyPage:
         equipments_page = paginator.page(paginator.num_pages)
 
-    # Prepare data for serialization
-    result_data = [{
-        "type": equipment["type"],
-        "data": equipment["data"].id  # Pass the ID for serialization later
-    } for equipment in equipments_page]
+    # Serialize the paginated data
+    serializer = GenericEquipmentSerializer(equipments_page, many=True)
 
     # Return paginated and structured response
     return Response({
         'page': int(page),
         'total_pages': paginator.num_pages,
         'total_equipments': paginator.count,
-        'equipments': result_data
+        'equipments': serializer.data
     }, status=status.HTTP_200_OK)
