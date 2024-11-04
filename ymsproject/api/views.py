@@ -71,7 +71,7 @@ def get_slots(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-# Slot
+
 
 
 # Structure
@@ -479,3 +479,100 @@ def get_slot_isupdated(request):
 
     # 업데이트 여부를 result 필드로 반환
     return Response({"result": slots_updated}, status=status.HTTP_200_OK)
+
+
+# CurrentSlotState
+@api_view(['GET'])
+def current_slot_state(request):
+    # 쿼리 파라미터에서 yard_id 가져오기
+    yard_id = request.query_params.get('yard_id')
+    
+    # yard_id가 없는 경우 에러 반환
+    if not yard_id:
+        return Response({'error': 'yard_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Slot 테이블에서 주어진 yard_id에 해당하는 slot_id 가져오기
+    slot_ids = list(Slot.objects.filter(yard_id=yard_id).values_list('slot_id', flat=True))
+
+    # 각 테이블에서 해당 slot_id를 가진 모든 레코드 조회
+    trucks = Truck.objects.filter(slot_id__in=slot_ids)
+    chassis = Chassis.objects.filter(slot_id__in=slot_ids)
+    containers = Container.objects.filter(slot_id__in=slot_ids)
+    trailers = Trailer.objects.filter(slot_id__in=slot_ids)
+
+    # 각 시리얼라이저를 사용해 데이터를 직렬화
+    truck_serializer = TruckSerializer(trucks, many=True)
+    chassis_serializer = ChassisSerializer(chassis, many=True)
+    container_serializer = ContainerSerializer(containers, many=True)
+    trailer_serializer = TrailerSerializer(trailers, many=True)
+
+    # 모든 slot_id 중에서 비어 있는 슬롯을 식별
+    occupied_slot_ids = set()
+    occupied_slot_ids.update([data['slot'] for data in truck_serializer.data])
+    occupied_slot_ids.update([data['slot'] for data in chassis_serializer.data])
+    occupied_slot_ids.update([data['slot'] for data in container_serializer.data])
+    occupied_slot_ids.update([data['slot'] for data in trailer_serializer.data])
+
+    empty_slot_ids = [slot_id for slot_id in slot_ids if slot_id not in occupied_slot_ids]
+    empty_slots = [{"slot_id": slot_id} for slot_id in empty_slot_ids]
+
+    # 가장 최근 updated_at 시간 계산
+    all_updated_times = []
+    all_updated_times += [data['updated_at'] for data in truck_serializer.data]
+    all_updated_times += [data['updated_at'] for data in chassis_serializer.data]
+    all_updated_times += [data['updated_at'] for data in container_serializer.data]
+    all_updated_times += [data['updated_at'] for data in trailer_serializer.data]
+    max_updated_time = max(all_updated_times) if all_updated_times else None
+
+    # 모든 데이터를 합쳐서 반환
+    combined_data = {
+        "last_time": max_updated_time,
+        "data": {
+            "trucks": [
+                {
+                    "truck_id": truck["truck_id"],
+                    "state": truck["state"],
+                    "created_at": truck["created_at"],
+                    "updated_at": truck["updated_at"],
+                    "slot": truck["slot"]
+                }
+                for truck in truck_serializer.data
+            ],
+            "chassis": [
+                {
+                    "chassis_id": chassis["chassis_id"],
+                    "state": chassis["state"],
+                    "container_id": chassis["container_id"],
+                    "created_at": chassis["created_at"],
+                    "updated_at": chassis["updated_at"],
+                    "slot": chassis["slot"]
+                }
+                for chassis in chassis_serializer.data
+            ],
+            "containers": [
+                {
+                    "container_id": container["container_id"],
+                    "state": container["state"],
+                    "container_size": container["container_size"],
+                    "created_at": container["created_at"],
+                    "updated_at": container["updated_at"],
+                    "slot": container["slot"]
+                }
+                for container in container_serializer.data
+            ],
+            "trailers": [
+                {
+                    "trailer_id": trailer["trailer_id"],
+                    "state": trailer["state"],
+                    "trailer_size": trailer["trailer_size"],
+                    "created_at": trailer["created_at"],
+                    "updated_at": trailer["updated_at"],
+                    "slot": trailer["slot"]
+                }
+                for trailer in trailer_serializer.data
+            ],
+            "empty": empty_slots
+        }
+    }
+
+    return Response(combined_data, status=status.HTTP_200_OK)
