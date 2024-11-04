@@ -627,3 +627,24 @@ def get_sorted_equipments(request):
         'total_equipments': paginator.count,
         'equipments': serializer.data
     }, status=status.HTTP_200_OK)
+
+# driver-details-history
+@api_view(['GET'])
+def driver_transaction_history(request):
+    # 쿼리 파라미터에서 driver_id 가져오기
+    driver_id = request.query_params.get('driver_id')
+    
+    # driver_id가 제공되지 않으면 에러
+    if not driver_id:
+        return Response({"error": "driver_id 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # driver_id에 해당하는 Transaction 조회
+    transactions = Transaction.objects.filter(driver_id=driver_id).order_by('-created_at')
+    
+    # 조회된 Transaction 없으면 404
+    if not transactions.exists():
+        return Response({"error": "해당 driver_id에 대한 거래 내역이 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = TransactionSerializer(transactions, many=True)
+    
+    return Response(serializer.data, status=status.HTTP_200_OK)
