@@ -140,3 +140,20 @@ class SlotUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SlotUpdate
         fields = '__all__'
+
+class GenericEquipmentSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    data = serializers.SerializerMethodField()
+
+    def get_data(self, obj):
+        equipment = obj['data']
+        if obj['type'] == 'truck':
+            return TruckSerializer(equipment).data
+        elif obj['type'] == 'chassis':
+            return ChassisSerializer(equipment).data
+        elif obj['type'] == 'container':
+            return ContainerSerializer(equipment).data
+        elif obj['type'] == 'trailer':
+            return TrailerSerializer(equipment).data
+        else:
+            return None
