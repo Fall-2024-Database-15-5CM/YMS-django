@@ -21,4 +21,7 @@ urlpatterns = [
     ## Truck
     
     ## Slot Updates
+
+    ## user login
+    # path('user/login', views.user_login, name='user_login'),
 ]
