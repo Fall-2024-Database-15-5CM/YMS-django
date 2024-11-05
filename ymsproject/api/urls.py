@@ -12,7 +12,7 @@ urlpatterns = [
     path('driver/sorted', views.get_sorted_drivers, name='get_sorted_drivers'),
     path('driver/create', views.create_driver, name='create_driver'),
     path('driver/details-driver', views.get_driver_details, name='driver_details'),
-    path('driver/history', views.get_driver_history, name='driver_history'),
+    #path('driver/history', views.get_driver_history, name='driver_history'),
     
     ## Equipment Endpoints
     path('equipment/equipment-details', views.get_equipment_details, name='get_equipment_details'),

@@ -478,8 +478,15 @@ def get_slot_isupdated(request):
     # yard_id와 updated_time 이후에 업데이트된 Slot 존재 여부 확인
     slots_updated = Slot.objects.filter(yard_id=yard_id, updated_at__gt=updated_time).exists()
 
+    # yard_id에 해당하는 모든 슬롯의 updated_at 필드에서 가장 최근 시간 계산
+    all_updated_times = Slot.objects.filter(yard_id=yard_id).values_list('updated_at', flat=True)
+    max_updated_time = max(all_updated_times) if all_updated_times else None
+
     # 업데이트 여부를 result 필드로 반환
-    return Response({"result": slots_updated}, status=status.HTTP_200_OK)
+    return Response({
+        "result": slots_updated,
+        "last_time": max_updated_time
+    }, status=status.HTTP_200_OK)
 
 
 # CurrentSlotState
@@ -517,17 +524,10 @@ def current_slot_state(request):
     empty_slot_ids = [slot_id for slot_id in slot_ids if slot_id not in occupied_slot_ids]
     empty_slots = [{"slot_id": slot_id} for slot_id in empty_slot_ids]
 
-    # 가장 최근 updated_at 시간 계산
-    all_updated_times = []
-    all_updated_times += [data['updated_at'] for data in truck_serializer.data]
-    all_updated_times += [data['updated_at'] for data in chassis_serializer.data]
-    all_updated_times += [data['updated_at'] for data in container_serializer.data]
-    all_updated_times += [data['updated_at'] for data in trailer_serializer.data]
-    max_updated_time = max(all_updated_times) if all_updated_times else None
+    
 
     # 모든 데이터를 합쳐서 반환
     combined_data = {
-        "last_time": max_updated_time,
         "data": {
             "trucks": [
                 {
