@@ -471,7 +471,7 @@ def get_slot_isupdated(request):
 
     # updated_time 파싱
     try:
-        updated_time = datetime.strptime(updated_time_str, "%Y-%m-%dT%H:%M:%SZ")
+        updated_time = datetime.strptime(updated_time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
     except ValueError:
         return Response({"error": "Invalid updated_time format. Use ISO format, e.g., 2024-11-01T10:00:00Z"}, status=status.HTTP_400_BAD_REQUEST)
 
