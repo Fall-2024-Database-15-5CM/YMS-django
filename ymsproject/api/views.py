@@ -5,12 +5,16 @@ from .models import User, Division, Yard, Slot, Structure, Driver, Transaction, 
 from .serializer import UserSerializer, DivisionSerializer, YardSerializer, SlotSerializer, StructureSerializer, DriverSerializer, TransactionSerializer, TruckSerializer, ChassisSerializer, ContainerSerializer, TrailerSerializer, MaintenanceSerializer, SlotUpdateSerializer, GenericEquipmentSerializer
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-import base64
-from datetime import datetime
 from django.core.files.base import ContentFile
-from django.db.models import Min, Max, F
+from django.conf import settings
 from django.db import connection
+from django.db.models import Min, Max, F
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import make_password
+from datetime import datetime
+import base64
+import jwt
 
 
 def home(request):
@@ -471,7 +475,7 @@ def get_slot_isupdated(request):
 
     # updated_time 파싱
     try:
-        updated_time = datetime.strptime(updated_time_str, "%Y-%m-%dT%H:%M:%SZ")
+        updated_time = datetime.strptime(updated_time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
     except ValueError:
         return Response({"error": "Invalid updated_time format. Use ISO format, e.g., 2024-11-01T10:00:00Z"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -634,17 +638,60 @@ def driver_transaction_history(request):
     # 쿼리 파라미터에서 driver_id 가져오기
     driver_id = request.query_params.get('driver_id')
     
-    # driver_id가 제공되지 않으면 에러
+    # driver_id 제공되지 않으면 에러
     if not driver_id:
-        return Response({"error": "driver_id 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Please Enter the Driver ID."}, status=status.HTTP_400_BAD_REQUEST)
     
     # driver_id에 해당하는 Transaction 조회
     transactions = Transaction.objects.filter(driver_id=driver_id).order_by('-created_at')
     
     # 조회된 Transaction 없으면 404
     if not transactions.exists():
-        return Response({"error": "해당 driver_id에 대한 거래 내역이 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "There are no transactions for that Driver ID."}, status=status.HTTP_404_NOT_FOUND)
     
     serializer = TransactionSerializer(transactions, many=True)
     
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 사용자 회원가입
+@api_view(['POST'])
+def user_signup(request):
+    data = request.data
+    try:
+        # password 암호화
+        data['password'] = make_password(data['password'])
+        
+        serializer = UserSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "User created successfully!"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# 사용자 로그인
+@api_view(['POST'])
+def user_login(request):
+    try:
+        id = request.data.get('id')
+        password = request.data.get('pw')
+        
+        user = User.objects.filter(id=id).first()
+        if not user:
+            return Response({"error": "Invalid ID or password"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Check if the password matches
+        if not check_password(password, user.password):
+            return Response({"error": "Invalid ID or password"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Generate JWT Token
+        token = jwt.encode({'id': user.id}, settings.SECRET_KEY, algorithm='HS256')
+        
+        return Response({"message": "Login successful", "token": token}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
