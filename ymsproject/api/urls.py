@@ -1,7 +1,10 @@
 from django.urls import path
 from . import views
 
+from . import git
 urlpatterns = [
+    path('git/pull', git.git_pull, name='git-pull'),  # POST
+
     ## Live Map Endpoints
     path('livemap/yard-info', views.get_yard_slot_info, name='get_yard_slot_info'),
     path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
