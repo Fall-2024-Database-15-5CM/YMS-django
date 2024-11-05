@@ -11,6 +11,7 @@ from django.db import connection
 from django.db.models import Min, Max, F
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import make_password
 from datetime import datetime
 import base64
 import jwt
@@ -651,6 +652,24 @@ def driver_transaction_history(request):
     serializer = TransactionSerializer(transactions, many=True)
     
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 사용자 회원가입
+@api_view(['POST'])
+def user_signup(request):
+    data = request.data
+    try:
+        # password 암호화
+        data['password'] = make_password(data['password'])
+        
+        serializer = UserSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "User created successfully!"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # 사용자 로그인
