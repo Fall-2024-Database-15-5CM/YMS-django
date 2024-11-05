@@ -116,7 +116,7 @@ def get_sorted_drivers(request):
     drivers = Driver.objects.all().order_by(order_by)
 
     # 페이지네이션 (8개씩 나누기)
-    paginator = Paginator(drivers, 12)
+    paginator = Paginator(drivers, 10)
     try:
         drivers_page = paginator.page(page)
     except PageNotAnInteger:
