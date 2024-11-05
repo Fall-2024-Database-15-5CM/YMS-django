@@ -1,12 +1,14 @@
 from django.db import models
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from PIL import Image
 import json
 import io
 
+
 class User(models.Model):
     user_id = models.AutoField(primary_key=True)
-    password_hash = models.CharField(max_length=30)
+    password = models.CharField(max_length=128)  # password 필드 길이 수정
     username = models.CharField(max_length=30, unique=True)
     phone = models.CharField(max_length=13, unique=True)
     authority = models.TextField()
@@ -14,6 +16,10 @@ class User(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # password hashing 로직
+        if not self.pk:  # 새로운 객체일 때만 해싱
+            self.password = make_password(self.password)
+
         if isinstance(self.authority, dict):
             self.authority = json.dumps(self.authority)
         super().save(*args, **kwargs)
