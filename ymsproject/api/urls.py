@@ -2,17 +2,23 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('livemap/yard-info',views.get_yard_slot_info, name ='get_yard_slot_info'),
-    path('livemap/updated',views.get_updated_equipments,name='get_updated_equipments'),
-    path('livemap/is-updated',views.get_slot_isupdated,name='get_slot_isupdated'),
-    path('livemap/current-state',views.current_slot_state,name='current_slot_state'),
+    ## Live Map Endpoints
+    path('livemap/yard-info', views.get_yard_slot_info, name='get_yard_slot_info'),
+    path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
+    path('livemap/is-updated', views.get_slot_isupdated, name='get_slot_isupdated'),
+    path('livemap/current-state', views.current_slot_state, name='current_slot_state'),
     
+    ## Driver Endpoints
     path('driver/sorted', views.get_sorted_drivers, name='get_sorted_drivers'),
     path('driver/create', views.create_driver, name='create_driver'),
     path('driver/details-driver', views.get_driver_details, name='driver_details'),
+    path('driver/history', views.get_driver_history, name='driver_history'),
     
+    ## Equipment Endpoints
+    path('equipment/equipment-details', views.get_equipment_details, name='get_equipment_details'),
+    path('equipment/sorted', views.get_sorted_equipments, name='get_sorted_equipments'),
     
-    path('equipment/equipment-details',views.get_equipment_details,name='get_equipment_details'),
-    ## truck
-    ## slot-updates
+    ## Truck
+    
+    ## Slot Updates
 ]
