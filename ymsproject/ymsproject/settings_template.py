@@ -1,4 +1,4 @@
-import pymysql
+import pymysql,os
 pymysql.install_as_MySQLdb()
 from pathlib import Path
 
@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = ''
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -34,7 +34,7 @@ ROOT_URLCONF = 'ymsproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

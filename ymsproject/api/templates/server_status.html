@@ -1,0 +1,32 @@
+<!-- server_status.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Status</title>
+</head>
+<body>
+    <h1>Server Status</h1>
+    
+    <h2>CPU Usage</h2>
+    <p>{{ cpu_usage }}%</p>
+
+    <h2>Memory Usage</h2>
+    <ul>
+        <li>Total: {{ memory.total }} bytes</li>
+        <li>Available: {{ memory.available }} bytes</li>
+        <li>Used: {{ memory.used }} bytes</li>
+        <li>Free: {{ memory.free }} bytes</li>
+        <li>Percent Used: {{ memory.percent }}%</li>
+    </ul>
+
+    <h2>Disk Usage</h2>
+    <ul>
+        <li>Total: {{ disk.total }} bytes</li>
+        <li>Used: {{ disk.used }} bytes</li>
+        <li>Free: {{ disk.free }} bytes</li>
+        <li>Percent Used: {{ disk.percent }}%</li>
+    </ul>
+</body>
+</html>

@@ -26,5 +26,5 @@ urlpatterns = [
     path('user/login', views.user_login, name='user_login'),
 
     ## Additional Endpoints
-    
+    path('server-status/', views.server_status, name='server_status'),
 ]
