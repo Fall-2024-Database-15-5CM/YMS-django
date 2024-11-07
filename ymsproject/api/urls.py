@@ -21,4 +21,7 @@ urlpatterns = [
     ## Truck
     
     ## Slot Updates
+
+    ## Dashboard
+    path('dashboard/recent-transaction', views.get_recent_transaction, name='get_recent_transaction'),
 ]
