@@ -1,9 +1,13 @@
-import pymysql,os
-pymysql.install_as_MySQLdb()
+import pymysql
+import os
 from pathlib import Path
+from setting_secret import secret_key_yms, database_yms  
+
+pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = ''
+
+SECRET_KEY = secret_key_yms  
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
@@ -16,7 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'api'
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -49,23 +53,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ymsproject.wsgi.application'
 
-
-# 알맞게 채워넣어야 함!
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '', 
-        'PORT': '',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-        }
-    }
+    'default': database_yms  
 }
-
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -82,12 +72,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-
 
 STATIC_URL = 'static/'
 
