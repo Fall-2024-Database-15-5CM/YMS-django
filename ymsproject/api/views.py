@@ -659,11 +659,12 @@ def driver_transaction_history(request):
 # 사용자 회원가입
 @api_view(['POST'])
 def user_signup(request):
-    data = request.data
+    data = request.data.copy()
     try:
         # password 암호화
-        data['password'] = make_password(data['password'])
+        data['password_hash'] = make_password(data['password'])
         
+        del data['password']
         serializer = UserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
