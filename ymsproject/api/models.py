@@ -77,10 +77,10 @@ class Driver(models.Model):
     image = models.BinaryField(null=True, blank=True)  # 이미지 필드 추가
 
 class Transaction(models.Model):
-    transaction = models.CharField(max_length=16, primary_key=True)
-    truck = models.CharField(max_length=14)
-    equipment = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
-    child_equipment = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
+    transaction_id = models.CharField(max_length=16, primary_key=True)
+    truck_id = models.CharField(max_length=14)
+    equipment_id = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
+    child_equipment_id = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     source = models.ForeignKey(Yard, related_name='source', on_delete=models.SET_NULL, null=True)
     destination = models.ForeignKey(Yard, related_name='destination', on_delete=models.SET_NULL, null=True)
