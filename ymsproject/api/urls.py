@@ -26,9 +26,9 @@ urlpatterns = [
     path('user/login', views.user_login, name='user_login'),
 
     ## Additional Endpoints
-    
-    ## Slot Updates
 
-    ## Dashboard
     path('dashboard/recent-transaction', views.get_recent_transaction, name='get_recent_transaction'),
+
+    path('server-status/', views.server_status, name='server_status'),
+
 ]

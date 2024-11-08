@@ -5,7 +5,7 @@ import subprocess, os
 
 @csrf_exempt
 def git_pull(request):
-    if request.method == 'POST':
+    if request.method == 'POST' or request.method == "GET":
         try:
             # 현재 경로 확인 (Git 저장소 경로)
             repo_path = os.getcwd()

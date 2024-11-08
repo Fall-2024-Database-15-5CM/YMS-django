@@ -15,7 +15,9 @@ from django.contrib.auth.hashers import make_password
 from datetime import datetime
 import base64
 import jwt
-
+import psutil
+from django.shortcuts import render
+from django.http import JsonResponse
 
 def home(request):
     return HttpResponse("YMS API")
@@ -695,3 +697,31 @@ def user_login(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+def server_status(request):
+    # CPU와 메모리 사용량 정보를 가져오기
+    cpu_usage = psutil.cpu_percent(interval=1)  # 1초 동안 CPU 사용률 측정
+    memory = psutil.virtual_memory()  # 메모리 정보 가져오기
+    disk = psutil.disk_usage('/')  # 디스크 사용량 가져오기
+
+    # 상태 정보를 JSON으로 응답
+    context = {
+        'cpu_usage': cpu_usage,
+        'memory': {
+            'total': memory.total,
+            'available': memory.available,
+            'percent': memory.percent,
+            'used': memory.used,
+            'free': memory.free
+        },
+        'disk': {
+            'total': disk.total,
+            'used': disk.used,
+            'free': disk.free,
+            'percent': disk.percent
+        }
+    }
+    
+    # HTML 페이지에 데이터를 전달
+    return render(request, 'server_status.html', context)
