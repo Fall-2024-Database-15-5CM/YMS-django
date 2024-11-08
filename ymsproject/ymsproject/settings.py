@@ -1,7 +1,7 @@
 import pymysql
 import os
 from pathlib import Path
-from setting_secret import secret_key_yms, database_yms  
+from ymsproject.setting_secret import secret_key_yms, database_yms  
 
 pymysql.install_as_MySQLdb()
 
