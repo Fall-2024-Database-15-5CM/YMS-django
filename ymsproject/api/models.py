@@ -4,8 +4,8 @@ import json
 
 class User(models.Model):
     user_id = models.AutoField(primary_key=True)
-    password_hash = models.CharField(max_length=30)
-    username = models.CharField(max_length=30, unique=True)
+    password_hash = models.CharField(max_length=128)
+    username = models.CharField(max_length=30, unique=False)
     phone = models.CharField(max_length=13, unique=True)
     authority = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
