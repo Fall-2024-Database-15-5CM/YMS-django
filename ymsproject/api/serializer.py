@@ -14,7 +14,19 @@ class DivisionSerializer(serializers.ModelSerializer):
 class YardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Yard
-        fields = '__all__'
+        fields = ['yard_id', 'yard_name']  # 필요한 필드만 선택
+
+class TransactionSerializer(serializers.ModelSerializer):
+    source = YardSerializer(read_only=True)  # source에 대한 Yard 정보 포함
+    destination = YardSerializer(read_only=True)  # destination에 대한 Yard 정보 포함
+    
+    class Meta:
+        model = Transaction
+        fields = [
+            'transaction_id', 'equipment_id', 'type', 'status', 
+            'source', 'destination', 'datetime', 'created_at', 'details'
+        ]
+
 
 class SlotSerializer(serializers.ModelSerializer):
     class Meta:
