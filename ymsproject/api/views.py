@@ -642,18 +642,39 @@ def driver_transaction_history(request):
     
     # driver_id 제공되지 않으면 에러
     if not driver_id:
-        return Response({"error": "Please Enter the Driver ID."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Please enter the Driver ID."}, status=status.HTTP_400_BAD_REQUEST)
     
     # driver_id에 해당하는 Transaction 조회
-    transactions = Transaction.objects.filter(driver_id=driver_id).order_by('-created_at')
+    transactions = Transaction.objects.filter(driver_id=driver_id).select_related('driver', 'source', 'destination').order_by('-created_at')
     
     # 조회된 Transaction 없으면 404
     if not transactions.exists():
         return Response({"error": "There are no transactions for that Driver ID."}, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = TransactionSerializer(transactions, many=True)
+    # 응답 데이터 생성
+    transaction_list = []
+    for txn in transactions:
+        transaction_data = {
+            "transaction_id": txn.transaction_id,
+            "driver_id": txn.driver.driver_id,
+            "driver_name": txn.driver.name,
+            "truck_id": txn.truck_id,
+            "equipment_id": txn.equipment_id,
+            "child_equipment_id": txn.child_equipment_id,
+            "source": {
+                "yard_id": txn.source.yard_id if txn.source else None,
+                "yard_name": txn.source.yard_name if txn.source else None
+            } if txn.source else None,
+            "destination": {
+                "yard_id": txn.destination.yard_id if txn.destination else None,
+                "yard_name": txn.destination.yard_name if txn.destination else None
+            } if txn.destination else None,
+            "datetime": txn.datetime.isoformat(),
+            "created_at": txn.created_at.isoformat()
+        }
+        transaction_list.append(transaction_data)
     
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(transaction_list, status=status.HTTP_200_OK)
 
 
 # 사용자 회원가입
