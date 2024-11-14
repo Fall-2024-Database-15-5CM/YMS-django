@@ -747,3 +747,40 @@ def server_status(request):
     
     # HTML 페이지에 데이터를 전달
     return render(request, 'server_status.html', context)
+
+
+#RecentTransaction
+@api_view(['GET'])
+def get_recent_transaction(request):
+    # 쿼리 파라미터에서 yard_ids 가져오기
+    yard_ids = request.query_params.getlist('yard_ids')
+    if not yard_ids:
+        return Response({'error': 'yard_ids are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 쿼리 파라미터에서 가져올 트랜잭션 개수 가져오기 (기본값: 7)
+    n = int(request.query_params.get('n', 7))
+
+    # 지정된 yard_ids에서 최근 트랜잭션 n개를 필터링
+    transactions = (
+        Transaction.objects.filter(yard_id__in=yard_ids)
+        .order_by('-datetime')[:n]
+    )
+
+    # 트랜잭션 데이터를 원하는 형식으로 직렬화
+    data = [
+        {
+            "transaction_id": transaction.transaction_id,
+            "datetime": transaction.datetime,
+            "datetime_end": transaction.datetime_end,
+            "arrive_id": transaction.arrive_id,
+            "destination_id": transaction.destination_id,
+            "truck_id": transaction.truck_id,
+            "equipment_id": transaction.equipment_id,
+            "child_equipment_id": transaction.child_equipment_id,
+            "state": transaction.state,
+        }
+        for transaction in transactions
+    ]
+
+    # 결과 반환
+    return Response({"data": data}, status=status.HTTP_200_OK)
