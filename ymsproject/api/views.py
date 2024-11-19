@@ -760,9 +760,9 @@ def get_recent_transaction(request):
     # 쿼리 파라미터에서 가져올 트랜잭션 개수 가져오기 (기본값: 7)
     n = int(request.query_params.get('n', 7))
 
-    # 지정된 yard_ids에서 최근 트랜잭션 n개를 필터링
+    # 지정된 yard_ids에서 source_id 또는 destination_id가 일치하는 최근 트랜잭션 n개를 필터링
     transactions = (
-        Transaction.objects.filter(yard_id__in=yard_ids)
+        Transaction.objects.filter(Q(source_id__in=yard_ids) | Q(destination_id__in=yard_ids))
         .order_by('-datetime')[:n]
     )
 
@@ -772,7 +772,7 @@ def get_recent_transaction(request):
             "transaction_id": transaction.transaction_id,
             "datetime": transaction.datetime,
             "datetime_end": transaction.datetime_end,
-            "arrive_id": transaction.arrive_id,
+            "arrive_id": transaction.source_id,  # arrive_id는 source_id로 매핑
             "destination_id": transaction.destination_id,
             "truck_id": transaction.truck_id,
             "equipment_id": transaction.equipment_id,
