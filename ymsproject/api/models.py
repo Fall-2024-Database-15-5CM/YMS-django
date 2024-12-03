@@ -98,7 +98,7 @@ class Chassis(models.Model):
     chassis_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
-    container_id = models.IntegerField(null=True)  # Placeholder for foreign key relation
+    container_id = models.CharField(max_length = 16,null=True)  # Placeholder for foreign key relation
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
