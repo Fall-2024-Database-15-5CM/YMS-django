@@ -23,13 +23,23 @@ class User(models.Model):
             return {}
 
 class Division(models.Model):
-    division_id = models.CharField(max_length=10, primary_key=True)
+    # ID 형식: 2 Letters (예: "LA", "PHX")
+    division_id = models.CharField(
+        max_length=3,
+        primary_key=True,
+        validators=[RegexValidator(r'^[A-Z]{2}$', 'Division ID must consist of 2 uppercase letters.')],
+    )
     division_name = models.CharField(max_length=30)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
 class Yard(models.Model):
-    yard_id = models.CharField(max_length=10, primary_key=True)
+    # ID 형식: Division + 2 Digits (예: "LA01")
+    yard_id = models.CharField(
+        max_length=5,
+        primary_key=True,
+        validators=[RegexValidator(r'^[A-Z]{2}\d{2}$', 'Yard ID must follow the format: 2 letters + 2 digits.')],
+    )
     division = models.ForeignKey(Division, on_delete=models.CASCADE)
     yard_name = models.CharField(max_length=30)
     capacity = models.IntegerField()
@@ -40,12 +50,12 @@ class Slot(models.Model):
     slot_id = models.AutoField(primary_key=True)
     yard = models.ForeignKey(Yard, on_delete=models.CASCADE)
     slot_num = models.IntegerField()
-    slot_type = models.CharField(null=False,max_length=30)
+    slot_type = models.CharField(null=False, max_length=30)
     x = models.IntegerField()
     y = models.IntegerField()
     w = models.IntegerField()
     h = models.IntegerField()
-    direction = models.CharField(max_length=11,default='')
+    direction = models.CharField(max_length=11, default='')
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -63,18 +73,21 @@ class Structure(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class Driver(models.Model):
-    driver_id = models.CharField(max_length=16, primary_key=True)
-    name = models.CharField(max_length=30,null=False)
+    # ID 형식: 6 Letters + 2 Digits (예: "DRIVER01")
+    driver_id = models.CharField(
+        max_length=8,
+        primary_key=True,
+        validators=[RegexValidator(r'^[A-Z]{6}\d{2}$', 'Driver ID must follow the format: 6 letters + 2 digits.')],
+    )
+    name = models.CharField(max_length=30, null=False)
     license_number = models.CharField(max_length=30)
-    phone = models.CharField(max_length=13,default='')
-    adress = models.CharField(max_length=50,default='')
-    email = models.CharField(max_length=30,default='')
-    state = models.CharField(max_length=30,default='')
-    status = models.CharField(max_length=50,default='')
+    phone = models.CharField(max_length=13, default='')
+    address = models.CharField(max_length=50, default='')
+    email = models.CharField(max_length=30, default='')
+    state = models.CharField(max_length=30, default='')
+    status = models.CharField(max_length=50, default='')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-    thumbnail = models.BinaryField(null=True, blank=True)  # 썸네일 필드 추가
-    image = models.BinaryField(null=True, blank=True)  # 이미지 필드 추가
 
 class Transaction(models.Model):
     transaction_id = models.CharField(max_length=16, primary_key=True)
@@ -95,24 +108,39 @@ class Truck(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class Chassis(models.Model):
-    chassis_id = models.CharField(max_length=16, primary_key=True)
-    slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
+    # ID 형식: 4 Letters (예: "TRAX")
+    chassis_id = models.CharField(
+        max_length=4,
+        primary_key=True,
+        validators=[RegexValidator(r'^[A-Z]{4}$', 'Chassis ID must consist of 4 uppercase letters.')],
+    )
+    slot = models.ForeignKey(Yard, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
-    container_id = models.CharField(max_length = 16,null=True)  # Placeholder for foreign key relation
+    container_id = models.CharField(max_length=16, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
 class Container(models.Model):
-    container_id = models.CharField(max_length=16, primary_key=True)
-    slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
+    # ID 형식: 4 Letters + 7 Digits (예: "CONT1234567")
+    container_id = models.CharField(
+        max_length=11,
+        primary_key=True,
+        validators=[RegexValidator(r'^[A-Z]{4}\d{7}$', 'Container ID must follow the format: 4 letters + 7 digits.')],
+    )
+    slot = models.ForeignKey(Yard, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
     container_size = models.CharField(max_length=10)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
 class Trailer(models.Model):
-    trailer_id = models.CharField(max_length=16, primary_key=True)
-    slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
+    # ID 형식: 4 Letters + 6 Digits (예: "TRAI123456")
+    trailer_id = models.CharField(
+        max_length=10,
+        primary_key=True,
+        validators=[RegexValidator(r'^[A-Z]{4}\d{6}$', 'Trailer ID must follow the format: 4 letters + 6 digits.')],
+    )
+    slot = models.ForeignKey(Yard, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
     trailer_size = models.CharField(max_length=10)
     created_at = models.DateTimeField(default=timezone.now)
