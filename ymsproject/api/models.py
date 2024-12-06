@@ -83,8 +83,11 @@ class Transaction(models.Model):
     child_equipment_id = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     source = models.ForeignKey(Yard, related_name='source', on_delete=models.SET_NULL, null=True)
+    source_slot = models.IntegerField()
     destination = models.ForeignKey(Yard, related_name='destination', on_delete=models.SET_NULL, null=True)
+    destination_slot = models.IntegerField()
     datetime = models.DateTimeField(default=timezone.now)
+    datetime_end = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now)
 
 class Truck(models.Model):
