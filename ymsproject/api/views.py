@@ -180,7 +180,7 @@ def get_sorted_transactions(request):
     return Response({
         'page': int(page),  # 현재 페이지 번호 반환
         'total_pages': paginator.num_pages,  # 전체 페이지 수
-        'total_drivers': paginator.count,  # 전체 드라이버 수
+        'total_transactions': paginator.count,  # 전체 드라이버 수
         'transactions': serializer.data  # 현재 페이지의 드라이버 데이터
     }, status=status.HTTP_200_OK)
 
