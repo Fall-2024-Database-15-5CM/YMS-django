@@ -11,12 +11,17 @@ urlpatterns = [
     path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
     path('livemap/is-updated', views.get_slot_isupdated, name='get_slot_isupdated'),
     path('livemap/current-state', views.current_slot_state, name='current_slot_state'),
-    
     # Driver Endpoints
     path('driver/sorted', views.get_sorted_drivers, name='get_sorted_drivers'),
     path('driver/create', views.create_driver, name='create_driver'),
     path('driver/details-driver', views.get_driver_details, name='driver_details'),
     path('driver/history', views.driver_transaction_history, name='driver_history'),
+    
+    # transaction Endpoints
+    path('transaction/sorted', views.get_sorted_transactions, name='get_sorted_transactions'),
+    # path('transaction/create', views.create_transaction, name='create_transaction'),
+    # path('transaction/details-transaction', views.get_transaction_details, name='transaction_details'),
+    # path('transaction/history', views.transaction_transaction_history, name='transaction_history'),
     
     # Equipment Endpoints
     path('equipment/equipment-details', views.get_equipment_details, name='get_equipment_details'),
@@ -32,4 +37,5 @@ urlpatterns = [
 
     # Server Status Endpoint
     path('server-status/', views.server_status, name='server_status'),
+    
 ]

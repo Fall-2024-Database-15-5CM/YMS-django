@@ -146,6 +146,44 @@ def get_sorted_drivers(request):
         'drivers': serializer.data  # 현재 페이지의 드라이버 데이터
     }, status=status.HTTP_200_OK)
 
+# sorted transaction
+@api_view(['GET'])
+def get_sorted_transactions(request):
+    # Query parameters 받기
+    order_by = request.query_params.get('order_by', 'transaction_id')  # 기본 정렬 필드
+    page = request.query_params.get('page', 1)  # 기본 페이지 번호
+    # Driver 쿼리셋 정렬 적용
+    drivers = Transaction.objects.all().order_by(order_by)
+
+    # 페이지네이션 (8개씩 나누기)
+    paginator = Paginator(drivers, 10)
+    try:
+        drivers_page = paginator.page(page)
+    except PageNotAnInteger:
+        drivers_page = paginator.page(1)
+    except EmptyPage:
+        drivers_page = paginator.page(paginator.num_pages)
+    
+
+    serializer = TransactionSerializer(drivers_page, many=True)
+    data = serializer.data
+
+    # 각 드라이버의 'created_at' 필드 변환
+    for driver in data:
+        iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
+        if iso_time_str:
+            dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
+            readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
+            driver["updated_at"] = readable_format
+
+
+    return Response({
+        'page': int(page),  # 현재 페이지 번호 반환
+        'total_pages': paginator.num_pages,  # 전체 페이지 수
+        'total_drivers': paginator.count,  # 전체 드라이버 수
+        'transactions': serializer.data  # 현재 페이지의 드라이버 데이터
+    }, status=status.HTTP_200_OK)
+
 @api_view(['GET'])
 def get_driver_details(request):
     # 쿼리 파라미터에서 driver_id 가져오기
