@@ -18,7 +18,7 @@ import jwt
 import psutil
 from django.shortcuts import render
 from django.http import JsonResponse
-
+from django.core.exceptions import ObjectDoesNotExist
 def home(request):
     return HttpResponse("YMS API")
 
@@ -648,7 +648,6 @@ def get_sorted_equipments(request):
     ] + [
         {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
     ]
-
     # Apply sorting based on the provided order_by field
     all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
 
@@ -664,12 +663,27 @@ def get_sorted_equipments(request):
     # Serialize the paginated data
     serializer = GenericEquipmentSerializer(equipments_page, many=True)
 
+    modified_data = serializer.data
+
+    for equipment in modified_data:
+        slot_id = equipment['data'].get("slot")  # Serialized data에서 slot 값을 가져옴
+        if slot_id:
+            try:
+                # Find the corresponding Slot object
+                slot = Slot.objects.get(slot_id=slot_id)
+                # Replace the `slot` value with "yard-slot_num" format
+                equipment['data']["slot"] = f"{slot.yard.yard_id}-{slot.slot_num}"
+            except Slot.DoesNotExist:
+                # If no matching Slot is found, set a default value
+                equipment['data']["slot"] = "Not found"
+            equipment['data']["slot_id"] = slot_id  # Add the original slot_id value
+
     # Return paginated and structured response
     return Response({
         'page': int(page),
         'total_pages': paginator.num_pages,
         'total_equipments': paginator.count,
-        'equipments': serializer.data
+        'equipments': modified_data,
     }, status=status.HTTP_200_OK)
 
 # driver-details-history
