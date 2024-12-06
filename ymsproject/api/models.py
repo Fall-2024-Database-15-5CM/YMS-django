@@ -78,6 +78,7 @@ class Driver(models.Model):
 
 class Transaction(models.Model):
     transaction_id = models.CharField(max_length=16, primary_key=True)
+    state = models.CharField(max_length=14)
     truck_id = models.CharField(max_length=14)
     equipment_id = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
     child_equipment_id = models.CharField(max_length=14)  # ForeignKey placeholder for dynamic relations
