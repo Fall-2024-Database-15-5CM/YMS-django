@@ -6,6 +6,7 @@ urlpatterns = [
     # Git Management Endpoint
     path('git/pull', git.git_pull, name='git-pull'),  # POST
     # Live Map Endpoints
+    path('livemap/yards',views.get_yards, name="get_yards"),
     path('livemap/yard-info', views.get_yard_slot_info, name='get_yard_slot_info'),
     path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
     path('livemap/is-updated', views.get_slot_isupdated, name='get_slot_isupdated'),
