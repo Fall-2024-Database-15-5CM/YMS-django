@@ -15,6 +15,10 @@ class YardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Yard
         fields = ['yard_id', 'yard_name']  # 필요한 필드만 선택
+class YardAllSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Yard
+        fields = '__all__'
 
 class TransactionSerializer(serializers.ModelSerializer):
     source = YardSerializer(read_only=True)  # source에 대한 Yard 정보 포함
