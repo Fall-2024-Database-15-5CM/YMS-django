@@ -860,7 +860,12 @@ def update_weather(request):
             pass
     return Response({'message': 'Weather data updated successfully'}, status=status.HTTP_201_CREATED)
 
-
+@api_view(['GET'])
+def get_weather(request):
+    # icon을 내림차순해서 순서대로 4개만
+    yards = Yard.objects.all().order_by('-weather')[:4]
+    serializer = YardAllSerializer(yards, many=True)  
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def get_today_summery(request):
