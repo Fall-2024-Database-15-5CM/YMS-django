@@ -35,6 +35,10 @@ class Yard(models.Model):
     capacity = models.IntegerField()
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    lat = models.FloatField(default=0)
+    lon = models.FloatField(default=0)
+    weather = models.CharField(max_length=3,default='')
+    temperature = models.FloatField(default=0)
 
 class Slot(models.Model):
     slot_id = models.AutoField(primary_key=True)
