@@ -859,3 +859,18 @@ def update_weather(request):
         except:
             pass
     return Response({'message': 'Weather data updated successfully'}, status=status.HTTP_201_CREATED)
+
+
+
+@api_view(['GET'])
+def get_today_summery(request):
+    # datetime 필드의 날짜가 오늘이거나 datetime_end 필드의 날짜가 오늘인 경우
+    today_transactions = Transaction.objects.filter(Q(datetime__date=date.today()) | Q(datetime_end__date=date.today()))
+    # 'Reservation','Processing','End'
+    today_summery = {
+        'Total': today_transactions.count(),
+        'Reservation': today_transactions.filter(state='Reservation').count(),
+        'Processing': today_transactions.filter(state='Processing').count(),
+        'End': today_transactions.filter(state='End').count()
+    }
+    return Response(today_summery, status=status.HTTP_200_OK)

@@ -34,6 +34,7 @@ urlpatterns = [
     # Dashboard Endpoint
     path('dashboard/recent-transaction', views.get_recent_transaction, name='get_recent_transaction'),
     path('dashboard/update-weather', views.update_weather, name='update_weather'),
+    path('dashboard/today_transaction', views.get_today_summery, name='get_today_transaction'),
     # Server Status Endpoint
     path('server-status/', views.server_status, name='server_status'),
     
