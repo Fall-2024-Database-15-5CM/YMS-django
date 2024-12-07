@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User, Division, Yard, Slot, Structure, Driver, Transaction, Truck, Chassis, Container, Trailer, Maintenance, SlotUpdate
-from .serializer import UserSerializer, DivisionSerializer, YardSerializer, SlotSerializer, StructureSerializer, DriverSerializer, TransactionSerializer, TruckSerializer, ChassisSerializer, ContainerSerializer, TrailerSerializer, MaintenanceSerializer, SlotUpdateSerializer, GenericEquipmentSerializer
+from .serializer import *
 from django.http import HttpResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.files.base import ContentFile
@@ -12,13 +12,16 @@ from django.db.models import Min, Max, F
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
-from datetime import datetime
-import base64
+from datetime import date, datetime
+import base64,requests
 import jwt
 import psutil
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
+
+from django.db.models import Q
+from datetime import date
 def home(request):
     return HttpResponse("YMS API")
 
@@ -824,8 +827,8 @@ def get_recent_transaction(request):
             "transaction_id": transaction.transaction_id,
             "datetime": transaction.datetime,
             "datetime_end": transaction.datetime_end,
-            "arrive_id": transaction.source_id,  # arrive_id는 source_id로 매핑
-            "destination_id": transaction.destination_id,
+            "arrive_id": transaction.source,  # arrive_id는 source_id로 매핑
+            "destination_id": transaction.destination,
             "truck_id": transaction.truck_id,
             "equipment_id": transaction.equipment_id,
             "child_equipment_id": transaction.child_equipment_id,
