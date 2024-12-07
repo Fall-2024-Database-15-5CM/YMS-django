@@ -839,3 +839,23 @@ def get_recent_transaction(request):
 
     # 결과 반환
     return Response({"data": data}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def update_weather(request):
+    # 요청 데이터에서 날씨 정보 추출
+    yards = Yard.objects.all()
+    for yard in yards:
+        try:
+            lat = yard.lat
+            lon = yard.lon
+            url = f"https://api.openweathermap.org/data/3.0/onecall?units=metric&lat={lat}&lon={lon}&appid=fddd33a3fcc06aa00b5efcc7163f95ca"
+            weather_data = requests.get(url).json()
+            print(weather_data)
+            temperature = weather_data['current']['temp']
+            weather = weather_data['current']['weather'][0]['icon']
+            yard.weather = weather
+            yard.temperature = temperature
+            yard.save()
+        except:
+            pass
+    return Response({'message': 'Weather data updated successfully'}, status=status.HTTP_201_CREATED)

@@ -5,7 +5,6 @@ from . import git
 urlpatterns = [
     # Git Management Endpoint
     path('git/pull', git.git_pull, name='git-pull'),  # POST
-    path('init/yards',views.get_yards, name="get_yards"),
     # Live Map Endpoints
     path('livemap/yard-info', views.get_yard_slot_info, name='get_yard_slot_info'),
     path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
@@ -34,7 +33,7 @@ urlpatterns = [
 
     # Dashboard Endpoint
     path('dashboard/recent-transaction', views.get_recent_transaction, name='get_recent_transaction'),
-
+    path('dashboard/update-weather', views.update_weather, name='update_weather'),
     # Server Status Endpoint
     path('server-status/', views.server_status, name='server_status'),
     
