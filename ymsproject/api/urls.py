@@ -1,33 +1,43 @@
 from django.urls import path
 from . import views
+from . import git
 
 urlpatterns = [
-    ## users
-    path('users/', views.get_users, name='get_users'),
-    ## divisions
-    path('divisions/', views.get_divisions, name='get_divisions'),
-    ## yards
-    path('yards/', views.get_yards, name='get_yards'),
-    ## slots
-    path('slots/', views.get_slots, name='get_slots'),
-    ## strucures
-    path('structures/', views.get_structures, name='get_structures'),
-    ## Driver
-    path('drivers/', views.get_drivers, name='get_drivers'),
-    path('sorted_drivers/', views.get_sorted_drivers, name='get_sorted_drivers'),
-    path('create_driver/', views.create_driver, name='create_driver'),
-    ## Transaction
-    path('transactions/', views.get_transactions, name='get_transactions'),
-    ## truck
-    path('trucks/', views.get_trucks, name='get_trucks'),
-    ## chassis
-    path('chassis/', views.get_chassis, name='get_chassis'),
-    ## containers
-    path('containers/', views.get_containers, name='get_containers'),
-    ## trailers
-    path('trailers/', views.get_trailers, name='get_trailers'),
-    ## maintaence
-    path('maintenance/', views.get_maintenances, name='get_maintenance'),
-    ## slot-updates
-    path('slot-updates/', views.get_slot_updates, name='get_slot_updates'),
+    # Git Management Endpoint
+    path('git/pull', git.git_pull, name='git-pull'),  # POST
+    # Live Map Endpoints
+    path('livemap/yards',views.get_yards, name="get_yards"),
+    path('livemap/yard-info', views.get_yard_slot_info, name='get_yard_slot_info'),
+    path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
+    path('livemap/is-updated', views.get_slot_isupdated, name='get_slot_isupdated'),
+    path('livemap/current-state', views.current_slot_state, name='current_slot_state'),
+    # Driver Endpoints
+    path('driver/sorted', views.get_sorted_drivers, name='get_sorted_drivers'),
+    path('driver/create', views.create_driver, name='create_driver'),
+    path('driver/details-driver', views.get_driver_details, name='driver_details'),
+    path('driver/history', views.driver_transaction_history, name='driver_history'),
+    
+    # transaction Endpoints
+    path('transaction/sorted', views.get_sorted_transactions, name='get_sorted_transactions'),
+    # path('transaction/create', views.create_transaction, name='create_transaction'),
+    # path('transaction/details-transaction', views.get_transaction_details, name='transaction_details'),
+    # path('transaction/history', views.transaction_transaction_history, name='transaction_history'),
+    
+    # Equipment Endpoints
+    path('equipment/equipment-details', views.get_equipment_details, name='get_equipment_details'),
+    path('equipment/sorted', views.get_sorted_equipments, name='get_sorted_equipments'),
+    # path('equipment/history', views.equipment_transaction_history, name='equipment_transaction_history'),  # Equipment transaction history
+    
+    # User Endpoints
+    path('user/signup', views.user_signup, name='user_signup'),
+    path('user/login', views.user_login, name='user_login'),
+
+    # Dashboard Endpoint
+    path('dashboard/recent-transaction', views.get_recent_transaction, name='get_recent_transaction'),
+    path('dashboard/weather', views.get_weather, name='get_weather'),
+    path('dashboard/update-weather', views.update_weather, name='update_weather'),
+    path('dashboard/today_transaction', views.get_today_summery, name='get_today_transaction'),
+    # Server Status Endpoint
+    path('server-status/', views.server_status, name='server_status'),
+    
 ]

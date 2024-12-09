@@ -1,2 +1,3 @@
 # Ignore Django settings
 ymsproject/settings.py
+setting_secret.py

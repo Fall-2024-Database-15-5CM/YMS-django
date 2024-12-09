@@ -3,3 +3,6 @@
 *.pyc
 /ymsproject/api/migrations
 run.txt
+/.venv
+run.bat
+ymsproject/ymsproject/setting_secret.py
