@@ -1,6 +1,10 @@
 from django.db import models
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
+from PIL import Image
 import json
+import io
+
 
 class User(models.Model):
     user_id = models.AutoField(primary_key=True)
@@ -12,6 +16,10 @@ class User(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # password hashing 로직
+        if not self.pk:  # 새로운 객체일 때만 해싱
+            self.password = make_password(self.password)
+
         if isinstance(self.authority, dict):
             self.authority = json.dumps(self.authority)
         super().save(*args, **kwargs)
@@ -79,6 +87,18 @@ class Driver(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     thumbnail = models.BinaryField(null=True, blank=True)  # 썸네일 필드 추가
     image = models.BinaryField(null=True, blank=True)  # 이미지 필드 추가
+
+    def save(self, *args, **kwargs):
+        # 이미지 크기 조정
+        if self.image:
+            image = Image.open(io.BytesIO(self.image))
+            image = image.resize((40, 40)) # 40x40 픽셀
+            # 이미지를 바이너리로 변환
+            image_io = io.BytesIO()
+            image.save(image_io, format='PNG') # 일단 png로 해뒀는데 변경 가능
+            self.image = image_io.getvalue()
+
+        super().save(*args, **kwargs)
 
 class Transaction(models.Model):
     transaction_id = models.CharField(max_length=16, primary_key=True)
