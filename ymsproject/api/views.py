@@ -651,6 +651,7 @@ def current_slot_state(request):
     return Response(combined_data, status=status.HTTP_200_OK)
 
 # Sorted Equipment with validation
+@api_view(['GET'])
 def get_sorted_equipments(request):
     # Define common fields for validation
     valid_order_fields = {'updated_at', 'state', 'slot'}
