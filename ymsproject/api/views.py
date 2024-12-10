@@ -124,6 +124,7 @@ def get_sorted_drivers(request):
 
     if filter_param:
         drivers = drivers.filter(
+            Q(driver_id__icontains=filter_param) |
             Q(name__icontains=filter_param) |
             Q(phone__icontains=filter_param) |
             Q(state__icontains=filter_param)
