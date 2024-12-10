@@ -32,11 +32,15 @@ urlpatterns = [
     path('user/signup', views.user_signup, name='user_signup'),
     path('user/login', views.user_login, name='user_login'),
 
+    # TMS Endpoints
+    path('TMS/current_map', views.get_current_map, name='get_current_map'),
+
     # Dashboard Endpoint
     path('dashboard/recent-transaction', views.get_recent_transaction, name='get_recent_transaction'),
     path('dashboard/weather', views.get_weather, name='get_weather'),
     path('dashboard/update-weather', views.update_weather, name='update_weather'),
-    path('dashboard/today_transaction', views.get_today_summery, name='get_today_transaction'),
+    path('dashboard/today_transaction', views.get_today_summary, name='get_today_transaction'),
+    
     # Server Status Endpoint
     path('server-status/', views.server_status, name='server_status'),
     
