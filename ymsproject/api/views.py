@@ -808,7 +808,6 @@ def user_login(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 def server_status(request):
     # CPU와 메모리 사용량 정보를 가져오기
     cpu_usage = psutil.cpu_percent(interval=1)  # 1초 동안 CPU 사용률 측정
@@ -847,9 +846,62 @@ def get_recent_transaction(request):
     transactions = Transaction.objects.order_by('-datetime')[:n]
     data = TransactionSerializer(transactions, many=True).data
 
-
-    # 결과 반환
     return Response(data, status=status.HTTP_200_OK)
+
+
+# TMS current_map
+@api_view(['GET'])
+def get_current_map(request):
+    transaction_id = request.query_params.get('transaction_id', None)
+
+    if not transaction_id:
+        return Response({
+            "error": "Required parameters are missing.: transaction_id"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT yard_id, lat, lon
+                FROM api_yard
+                WHERE yard_id IN (
+                    SELECT source_id 
+                    FROM api_transaction 
+                    WHERE transaction_id = %s
+                    UNION
+                    SELECT destination_id 
+                    FROM api_transaction 
+                    WHERE transaction_id = %s
+                );
+            """, [transaction_id, transaction_id])
+
+            rows = cursor.fetchall()
+
+        results = [{"yard_id": row[0], "lat": row[1], "lon": row[2]} for row in rows]
+
+        if len(results) < 2:
+            return Response({
+                "error": "There is not enough data to calculate a midway point. At a minimum, a starting point and a destination are required."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 중간 위치 계산 (위도, 경도 평균값)
+        avg_lat = sum(float(item["lat"]) for item in results) / len(results)
+        avg_lon = sum(float(item["lon"]) for item in results) / len(results)
+
+        # "NOW"로 현재 차량 위치 추가
+        results.append({
+            "yard_id": "NOW",
+            "lat": round(avg_lat, 6),
+            "lon": round(avg_lon, 6)
+        })
+
+        return Response({"yards": results}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['POST'])
 def update_weather(request):
