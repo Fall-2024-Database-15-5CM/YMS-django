@@ -115,12 +115,23 @@ def get_drivers(request):
 @api_view(['GET'])
 def get_sorted_drivers(request):
     # Query parameters 받기
-    order_by = request.query_params.get('order_by', 'name')  # 기본 정렬 필드
-    page = request.query_params.get('page', 1)  # 기본 페이지 번호
-    # Driver 쿼리셋 정렬 적용
-    drivers = Driver.objects.all().order_by(order_by)
+    order_by = request.query_params.get('order_by', 'name')  
+    page = request.query_params.get('page', 1)  
+    filter_param = request.query_params.get('filter', None)  
 
-    # 페이지네이션 (8개씩 나누기)
+    # Driver 쿼리셋 초기화
+    drivers = Driver.objects.all()
+
+    if filter_param:
+        drivers = drivers.filter(
+            Q(name__icontains=filter_param) |
+            Q(phone__icontains=filter_param) |
+            Q(state__icontains=filter_param)
+        )
+
+    drivers = drivers.order_by(order_by)
+
+    # 페이지네이션 (10개씩 나누기)
     paginator = Paginator(drivers, 10)
     try:
         drivers_page = paginator.page(page)
@@ -128,12 +139,12 @@ def get_sorted_drivers(request):
         drivers_page = paginator.page(1)
     except EmptyPage:
         drivers_page = paginator.page(paginator.num_pages)
-    
 
+    # DriverSerializer 사용해 데이터 직렬화
     serializer = DriverSerializer(drivers_page, many=True, fields=['driver_id', 'name', 'phone', 'updated_at', 'state', 'thumbnail'])
     data = serializer.data
 
-    # 각 드라이버의 'created_at' 필드 변환
+    # 각 드라이버의 'updated_at' 필드 변환
     for driver in data:
         iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
         if iso_time_str:
@@ -141,7 +152,7 @@ def get_sorted_drivers(request):
             readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
             driver["updated_at"] = readable_format
 
-
+    # Response 데이터 반환
     return Response({
         'page': int(page),  # 현재 페이지 번호 반환
         'total_pages': paginator.num_pages,  # 전체 페이지 수
@@ -152,40 +163,49 @@ def get_sorted_drivers(request):
 # sorted transaction
 @api_view(['GET'])
 def get_sorted_transactions(request):
-    # Query parameters 받기
-    order_by = request.query_params.get('order_by', 'transaction_id')  # 기본 정렬 필드
-    page = request.query_params.get('page', 1)  # 기본 페이지 번호
-    # Driver 쿼리셋 정렬 적용
-    drivers = Transaction.objects.all().order_by(order_by)
+    order_by = request.query_params.get('order_by', 'transaction_id')  
+    page = request.query_params.get('page', 1)  
+    filter_param = request.query_params.get('filter', None)  
 
-    # 페이지네이션 (8개씩 나누기)
-    paginator = Paginator(drivers, 10)
+    transactions = Transaction.objects.all()
+
+    if filter_param:
+        transactions = transactions.filter(
+            Q(transaction_id__icontains=filter_param) |
+            Q(source__icontains=filter_param) |
+            Q(destination__icontains=filter_param) |
+            Q(state__icontains=filter_param)
+        )
+
+    transactions = transactions.order_by(order_by)
+
+    # 페이지네이션 (10개씩 나누기)
+    paginator = Paginator(transactions, 10)
     try:
-        drivers_page = paginator.page(page)
+        transactions_page = paginator.page(page)
     except PageNotAnInteger:
-        drivers_page = paginator.page(1)
+        transactions_page = paginator.page(1)
     except EmptyPage:
-        drivers_page = paginator.page(paginator.num_pages)
-    
+        transactions_page = paginator.page(paginator.num_pages)
 
-    serializer = TransactionSerializer(drivers_page, many=True)
+    serializer = TransactionSerializer(transactions_page, many=True)
     data = serializer.data
 
-    # 각 드라이버의 'created_at' 필드 변환
-    for driver in data:
-        iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
+    # 각 트랜잭션의 'updated_at' 필드 변환
+    for transaction in data:
+        iso_time_str = transaction.get("updated_at", None)  
         if iso_time_str:
             dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
             readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
-            driver["updated_at"] = readable_format
-
+            transaction["updated_at"] = readable_format
 
     return Response({
         'page': int(page),  # 현재 페이지 번호 반환
         'total_pages': paginator.num_pages,  # 전체 페이지 수
-        'total_transactions': paginator.count,  # 전체 드라이버 수
-        'transactions': serializer.data  # 현재 페이지의 드라이버 데이터
+        'total_transactions': paginator.count,  # 전체 트랜잭션 수
+        'transactions': serializer.data  # 현재 페이지의 트랜잭션 데이터
     }, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 def get_driver_details(request):
@@ -626,7 +646,6 @@ def current_slot_state(request):
     return Response(combined_data, status=status.HTTP_200_OK)
 
 # Sorted Equipment with validation
-@api_view(['GET'])
 def get_sorted_equipments(request):
     # Define common fields for validation
     valid_order_fields = {'updated_at', 'state', 'slot'}
@@ -634,6 +653,7 @@ def get_sorted_equipments(request):
     # Retrieve query parameters
     order_by = request.query_params.get('order_by', 'updated_at')
     page = request.query_params.get('page', 1)
+    filter_param = request.query_params.get('filter', '') 
 
     # Validate order_by field
     if order_by not in valid_order_fields:
@@ -651,11 +671,18 @@ def get_sorted_equipments(request):
     ] + [
         {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
     ]
+
+    if filter_param:
+        all_equipments = [
+            equipment for equipment in all_equipments
+            if filter_param.lower() in str(equipment["data"]).lower()
+        ]
+
     # Apply sorting based on the provided order_by field
     all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
 
     # Apply pagination
-    paginator = Paginator(all_equipments, 10)  # 10 items per page
+    paginator = Paginator(all_equipments, 10)
     try:
         equipments_page = paginator.page(page)
     except PageNotAnInteger:
@@ -669,7 +696,7 @@ def get_sorted_equipments(request):
     modified_data = serializer.data
 
     for equipment in modified_data:
-        slot_id = equipment['data'].get("slot")  # Serialized data에서 slot 값을 가져옴
+        slot_id = equipment['data'].get("slot")  # Serialized data에서 slot 값 가져옴
         if slot_id:
             try:
                 # Find the corresponding Slot object
