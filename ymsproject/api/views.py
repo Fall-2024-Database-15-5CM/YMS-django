@@ -981,7 +981,7 @@ def get_weather(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-def get_today_summery(request):
+def get_today_summary(request):
     # datetime 필드의 날짜가 오늘이거나 datetime_end 필드의 날짜가 오늘인 경우
     today_transactions = Transaction.objects.filter(Q(datetime__date=date.today()) | Q(datetime_end__date=date.today()))
     # 'Reservation','Processing','End'
