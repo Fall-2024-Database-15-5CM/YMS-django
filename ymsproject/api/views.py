@@ -173,8 +173,12 @@ def get_sorted_transactions(request):
     if filter_param:
         transactions = transactions.filter(
             Q(transaction_id__icontains=filter_param) |
-            Q(source_id__icontains=filter_param) |
-            Q(destination_id__icontains=filter_param) |
+            Q(driver_id__driver_id__icontains=filter_param) |
+            Q(truck_id__icontains=filter_param) |
+            Q(equipment_id__icontains=filter_param) |
+            Q(child_equipment_id__icontains=filter_param) |
+            Q(source__yard_id__icontains=filter_param) |
+            Q(destination__yard_id__icontains=filter_param) |
             Q(state__icontains=filter_param)
         )
 
