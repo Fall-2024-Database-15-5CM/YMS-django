@@ -381,6 +381,51 @@ def get_chassis(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Chassis Flip
+@api_view(['POST'])
+def chassis_flip(request):
+    source_slot_id = request.data.get('source_slot_id')
+    destination_slot_id = request.data.get('destination_slot_id')
+
+    if not source_slot_id or not destination_slot_id:
+        return Response({"error": "Both source_slot_id and destination_slot_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 슬롯 정보 조회
+        slots = Slot.objects.filter(slot_id__in=[source_slot_id, destination_slot_id])
+        if len(slots) < 2:
+            return Response({"error": "Invalid slot IDs provided."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 슬롯 좌표 추출
+        source_slot = next(slot for slot in slots if slot.slot_id == source_slot_id)
+        destination_slot = next(slot for slot in slots if slot.slot_id == destination_slot_id)
+
+        # 거리 계산
+        distance = calculate_distance(source_slot.x, source_slot.y, destination_slot.x, destination_slot.y)
+
+        # 이동 가능 여부 확인
+        if not is_slot_empty(destination_slot_id):
+            return Response({"error": "Destination slot is not empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Chassis 이동 처리
+        chassis = Chassis.objects.filter(slot_id=source_slot_id).first()
+        if not chassis:
+            return Response({"error": "No chassis found in source slot."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 슬롯 업데이트
+        chassis.slot_id = destination_slot_id
+        chassis.save()
+
+        return Response({
+            "message": "Chassis flipped successfully.",
+            "distance": distance,
+            "source_slot_id": source_slot_id,
+            "destination_slot_id": destination_slot_id
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # Container
 @api_view(['GET', 'POST'])
 def get_containers(request):
