@@ -82,7 +82,6 @@ def get_slots(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 # Structure
 @api_view(['GET', 'POST'])
 def get_structures(request):
@@ -482,9 +481,6 @@ def get_slot_updates(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
 # YardSlotInfo
 @api_view(['GET'])
 def get_yard_slot_info(request):
@@ -540,7 +536,6 @@ def get_yard_slot_info(request):
         # 오류 발생 시 에러 메시지 반환
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-
 # get_equipment_details
 @api_view(['GET'])
 def get_equipment_details(request):
@@ -574,6 +569,67 @@ def get_equipment_details(request):
     # If no equipment is found, return a 404 response
     return Response({"error": "장비를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
+# move equipment
+@api_view(['POST'])
+def move_equipment(request):
+    """
+    Yard 내부에서 Truck 또는 Trailer 등의 장비 이동
+    """
+    # 입력 파라미터 가져오기
+    equipment_id = request.data.get('equipment_id')
+    source_slot_id = request.data.get('source_slot_id')
+    destination_slot_id = request.data.get('destination_slot_id')
+
+    # 입력값 검증
+    if not all([equipment_id, source_slot_id, destination_slot_id]):
+        return Response({"error": "equipment_id, source_slot_id, and destination_slot_id are required."}, 
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 장비 조회 (Truck 또는 Trailer)
+        equipment = (Truck.objects.filter(truck_id=equipment_id).first() or
+                     Trailer.objects.filter(trailer_id=equipment_id).first())
+        
+        if not equipment:
+            return Response({"error": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 현재 슬롯 확인
+        if str(equipment.slot_id) != str(source_slot_id):
+            return Response({"error": f"Equipment is not located in source_slot_id: {source_slot_id}."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # 목표 슬롯 확인
+        destination_slot = Slot.objects.filter(slot_id=destination_slot_id).first()
+        if not destination_slot:
+            return Response({"error": f"Destination slot {destination_slot_id} does not exist."}, 
+                            status=status.HTTP_404_NOT_FOUND)
+        if destination_slot.occupied:
+            return Response({"error": f"Destination slot {destination_slot_id} is already occupied."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # 슬롯 이동
+        equipment.slot_id = destination_slot_id
+        equipment.save()
+
+        # 슬롯 정보 업데이트
+        source_slot = Slot.objects.filter(slot_id=source_slot_id).first()
+        if source_slot:
+            source_slot.occupied = False
+            source_slot.save()
+
+        destination_slot.occupied = True
+        destination_slot.save()
+
+        # 결과 반환
+        return Response({
+            "message": "Equipment moved successfully.",
+            "equipment_id": equipment_id,
+            "source_slot_id": source_slot_id,
+            "destination_slot_id": destination_slot_id
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # SlotIsUpdated
 @api_view(['GET'])
