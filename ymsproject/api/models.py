@@ -113,7 +113,7 @@ class Transaction(models.Model):
     destination_slot = models.IntegerField()
     datetime = models.DateTimeField(default=timezone.now)
     datetime_end = models.DateTimeField(default=timezone.now)
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now,)
 
 class Truck(models.Model):
     truck_id = models.CharField(max_length=16, primary_key=True)
@@ -121,6 +121,7 @@ class Truck(models.Model):
     state = models.CharField(max_length=30)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    size = models.CharField(max_length=10)
 
 class Chassis(models.Model):
     chassis_id = models.CharField(max_length=16, primary_key=True)
@@ -129,12 +130,13 @@ class Chassis(models.Model):
     container_id = models.CharField(max_length = 16,null=True)  # Placeholder for foreign key relation
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    size = models.CharField(max_length=10)
 
 class Container(models.Model):
     container_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
-    container_size = models.CharField(max_length=10)
+    size = models.CharField(max_length=10)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -142,7 +144,7 @@ class Trailer(models.Model):
     trailer_id = models.CharField(max_length=16, primary_key=True)
     slot = models.ForeignKey(Slot, on_delete=models.SET_NULL, null=True)
     state = models.CharField(max_length=30)
-    trailer_size = models.CharField(max_length=10)
+    size = models.CharField(max_length=10)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
