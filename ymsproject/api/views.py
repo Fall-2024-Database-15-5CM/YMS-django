@@ -1,3 +1,4 @@
+from django.utils.timezone import now
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -588,7 +589,9 @@ def move_equipment(request):
     try:
         # 장비 조회 (Truck 또는 Trailer)
         equipment = (Truck.objects.filter(truck_id=equipment_id).first() or
-                     Trailer.objects.filter(trailer_id=equipment_id).first())
+                     Trailer.objects.filter(trailer_id=equipment_id).first() or
+                     Chassis.objects.filter(chassis_id=equipment_id).first() or
+                     Container.objects.filter(container_id=equipment_id).first())
         
         if not equipment:
             return Response({"error": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -603,12 +606,18 @@ def move_equipment(request):
         if not destination_slot:
             return Response({"error": f"Destination slot {destination_slot_id} does not exist."}, 
                             status=status.HTTP_404_NOT_FOUND)
-        if destination_slot.occupied:
+        
+        if (Truck.objects.filter(slot_id=destination_slot_id).first() or
+            Trailer.objects.filter(slot_id=destination_slot_id).first() or
+            Chassis.objects.filter(slot_id=destination_slot_id).first() or
+            Container.objects.filter(slot_id=destination_slot_id).first()):
+        # if destination_slot.occupied:
             return Response({"error": f"Destination slot {destination_slot_id} is already occupied."}, 
                             status=status.HTTP_400_BAD_REQUEST)
 
         # 슬롯 이동
         equipment.slot_id = destination_slot_id
+        equipment.updated_at = now()
         equipment.save()
 
         # 슬롯 정보 업데이트
