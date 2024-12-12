@@ -620,15 +620,6 @@ def move_equipment(request):
         equipment.updated_at = now()
         equipment.save()
 
-        # 슬롯 정보 업데이트
-        source_slot = Slot.objects.filter(slot_id=source_slot_id).first()
-        if source_slot:
-            source_slot.occupied = False
-            source_slot.save()
-
-        destination_slot.occupied = True
-        destination_slot.save()
-
         # 결과 반환
         return Response({
             "message": "Equipment moved successfully.",
@@ -717,7 +708,8 @@ def current_slot_state(request):
                     "state": truck["state"],
                     "created_at": truck["created_at"],
                     "updated_at": truck["updated_at"],
-                    "slot": truck["slot"]
+                    "slot": truck["slot"],
+                    "size": truck['size']
                 }
                 for truck in truck_serializer.data
             ],
@@ -728,7 +720,8 @@ def current_slot_state(request):
                     "container_id": chassis["container_id"],
                     "created_at": chassis["created_at"],
                     "updated_at": chassis["updated_at"],
-                    "slot": chassis["slot"]
+                    "slot": chassis["slot"],
+                    "size": chassis["size"]
                 }
                 for chassis in chassis_serializer.data
             ],
@@ -736,7 +729,7 @@ def current_slot_state(request):
                 {
                     "container_id": container["container_id"],
                     "state": container["state"],
-                    "container_size": container["container_size"],
+                    "size": container["size"],
                     "created_at": container["created_at"],
                     "updated_at": container["updated_at"],
                     "slot": container["slot"]
@@ -747,7 +740,7 @@ def current_slot_state(request):
                 {
                     "trailer_id": trailer["trailer_id"],
                     "state": trailer["state"],
-                    "trailer_size": trailer["trailer_size"],
+                    "size": trailer["size"],
                     "created_at": trailer["created_at"],
                     "updated_at": trailer["updated_at"],
                     "slot": trailer["slot"]
@@ -764,72 +757,84 @@ def current_slot_state(request):
 @api_view(['GET'])
 def get_sorted_equipments(request):
     # Define common fields for validation
-    valid_order_fields = {'updated_at', 'state', 'slot'}
 
     # Retrieve query parameters
     order_by = request.query_params.get('order_by', 'updated_at')
-    page = request.query_params.get('page', 1)
+    order_type = request.query_params.get('order_type', 'asc')
+    
+    page = int(request.query_params.get('page', 1))-1
     filter_param = request.query_params.get('filter', '') 
+    with connection.cursor() as cursor:
+            cursor.execute(f"""SELECT 
+                                t.id, 
+                                t.vehicle, 
+                                t.slot_id,
+                                t.size, 
+                                CONCAT(api_slot.yard_id, '-', api_slot.slot_num) AS location,
+                                t.connect,
+                                t.state, 
+                                t.updated_at
+                           FROM (
+                                SELECT chassis_id AS id, 'chassis' AS vehicle,size, slot_id, updated_at, state,container_id AS connect FROM api_chassis
+                                UNION
+                                SELECT trailer_id AS id, 'trailer' AS vehicle,size, slot_id, updated_at, state,Null AS connect FROM api_trailer
+                                UNION
+                                SELECT truck_id AS id, 'truck' AS vehicle,size, slot_id, updated_at, state,Null AS connect FROM api_truck
+                                UNION
+                                SELECT container_id AS id, 'container' AS vehicle,size, slot_id, updated_at, state,Null AS connect FROM api_container
+                            ) as t
+                            JOIN api_slot
+                            ON t.slot_id = api_slot.slot_id
+                            WHERE 
+                                t.id LIKE '%{filter_param}%' OR
+                                t.vehicle LIKE '%{filter_param}%' OR
+                                t.slot_id LIKE '%{filter_param}%' OR
+                                CONCAT(api_slot.yard_id, '-', api_slot.slot_num) LIKE '%{filter_param}%' OR
+                                t.state LIKE '%{filter_param}%' OR
+                                t.updated_at LIKE '%{filter_param}%'
+                            order by {order_by} {order_type};
+                            """)
+
+            # rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            # 데이터 매핑 (딕셔너리로 변환)
+            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     # Validate order_by field
-    if order_by not in valid_order_fields:
-        return Response({
-            'error': f"Invalid order_by field. Allowed fields are: {', '.join(valid_order_fields)}"
-        }, status=status.HTTP_400_BAD_REQUEST)
+    # if order_by not in valid_order_fields:
+    #     return Response({
+    #         'error': f"Invalid order_by field. Allowed fields are: {', '.join(valid_order_fields)}"
+    #     }, status=status.HTTP_400_BAD_REQUEST)
 
     # Combine equipment data from all models
-    all_equipments = [
-        {"type": "truck", "data": truck} for truck in Truck.objects.all()
-    ] + [
-        {"type": "chassis", "data": chassis} for chassis in Chassis.objects.all()
-    ] + [
-        {"type": "container", "data": container} for container in Container.objects.all()
-    ] + [
-        {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
-    ]
+    # all_equipments = [
+    #     {"type": "truck", "data": truck} for truck in Truck.objects.all()
+    # ] + [
+    #     {"type": "chassis", "data": chassis} for chassis in Chassis.objects.all()
+    # ] + [
+    #     {"type": "container", "data": container} for container in Container.objects.all()
+    # ] + [
+    #     {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
+    # ]
 
-    if filter_param:
-        all_equipments = [
-            equipment for equipment in all_equipments
-            if filter_param.lower() in str(equipment["data"]).lower()
-        ]
+    # if filter_param:
+    #     all_equipments = [
+    #         equipment for equipment in all_equipments
+    #         if filter_param.lower() in str(equipment["data"]).lower()
+    #     ]
 
-    # Apply sorting based on the provided order_by field
-    all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
+    # # Apply sorting based on the provided order_by field
+    # all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
 
-    # Apply pagination
-    paginator = Paginator(all_equipments, 10)
-    try:
-        equipments_page = paginator.page(page)
-    except PageNotAnInteger:
-        equipments_page = paginator.page(1)
-    except EmptyPage:
-        equipments_page = paginator.page(paginator.num_pages)
-
-    # Serialize the paginated data
-    serializer = GenericEquipmentSerializer(equipments_page, many=True)
-
-    modified_data = serializer.data
-
-    for equipment in modified_data:
-        slot_id = equipment['data'].get("slot")  # Serialized data에서 slot 값 가져옴
-        if slot_id:
-            try:
-                # Find the corresponding Slot object
-                slot = Slot.objects.get(slot_id=slot_id)
-                # Replace the `slot` value with "yard-slot_num" format
-                equipment['data']["slot"] = f"{slot.yard.yard_id}-{slot.slot_num}"
-            except Slot.DoesNotExist:
-                # If no matching Slot is found, set a default value
-                equipment['data']["slot"] = "Not found"
-            equipment['data']["slot_id"] = slot_id  # Add the original slot_id value
-
-    # Return paginated and structured response
+    # # Apply pagination
+    total_equipments = len(rows)
+    total_pages = total_equipments//10
+    equipment = rows[10*page:10*page+10]
     return Response({
         'page': int(page),
-        'total_pages': paginator.num_pages,
-        'total_equipments': paginator.count,
-        'equipments': modified_data,
+        'total_pages': total_pages,
+        'total_equipments': total_equipments,
+        'equipments': equipment,
     }, status=status.HTTP_200_OK)
 
 # driver-details-history
