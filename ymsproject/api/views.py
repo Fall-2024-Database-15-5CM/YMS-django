@@ -1107,3 +1107,20 @@ def get_today_summary(request):
         'End': today_transactions.filter(state='End').count()
     }
     return Response(today_summery, status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+def get_processing_transaction(request):
+    # Define common fields for validation
+
+    with connection.cursor() as cursor:
+            cursor.execute(f"""select transaction_id, datetime,source_id, destination_id from api_transaction where state = 'Processing' order by datetime limit 6;
+                            """)
+
+            # rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            # 데이터 매핑 (딕셔너리로 변환)
+            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    return Response({'data':rows,}, status=status.HTTP_200_OK)

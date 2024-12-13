@@ -42,7 +42,7 @@ urlpatterns = [
     path('dashboard/weather', views.get_weather, name='get_weather'),
     path('dashboard/update-weather', views.update_weather, name='update_weather'),
     path('dashboard/today_transaction', views.get_today_summary, name='get_today_transaction'),
-    
+    path('dashboard/processing-transaction',views.get_processing_transaction,name='get_processing_transaction'),
     # Server Status Endpoint
     path('server-status/', views.server_status, name='server_status'),
     
