@@ -27,7 +27,7 @@ urlpatterns = [
     path('equipment/equipment-details', views.get_equipment_details, name='get_equipment_details'),
     path('equipment/sorted', views.get_sorted_equipments, name='get_sorted_equipments'),
     path('equipment/history', views.equipment_transaction_history, name='equipment_transaction_history'),  # Equipment transaction history
-    path('equipment/chassis-flip', views.chassis_flip, name='chassis_flip'),
+    path('equipment/chassis-flip', views.chassis_flip_sql, name='chassis_flip'),
     path('equipment/move', views.move_equipment, name='move_equipment'),
     
     # User Endpoints
