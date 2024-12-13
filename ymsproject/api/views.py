@@ -1161,3 +1161,17 @@ def get_processing_transaction(request):
             rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     return Response({'data':rows,}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_livemap_not_end(request):
+    # Define common fields for validation
+    yard_id = request.query_params.get('yard_id')
+    with connection.cursor() as cursor:
+            cursor.execute(f"""select * from api_transaction where state !="End" and destination_id="{yard_id}" order by destination_slot asc;""")
+
+            # rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            # 데이터 매핑 (딕셔너리로 변환)
+            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    return Response({'data':rows,}, status=status.HTTP_200_OK)

@@ -12,6 +12,8 @@ urlpatterns = [
     path('livemap/updated', views.get_updated_equipments, name='get_updated_equipments'),
     path('livemap/is-updated', views.get_slot_isupdated, name='get_slot_isupdated'),
     path('livemap/current-state', views.current_slot_state, name='current_slot_state'),
+    path('livemap/process-list', views.get_livemap_not_end, name='get_livemap_not_end'),
+    
     
     # Driver Endpoints
     path('driver/sorted', views.get_sorted_drivers, name='get_sorted_drivers'),
