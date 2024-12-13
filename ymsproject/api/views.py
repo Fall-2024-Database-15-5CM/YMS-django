@@ -490,6 +490,27 @@ def get_slot_updates(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# set_destination_slot
+@api_view(['POST'])
+def set_destination_slot(request):
+    transaction_id = request.data.get('transaction_id')
+    destination_slot = request.data.get('destination_slot')
+
+    if not transaction_id or not destination_slot:
+        return Response({"error": "transaction_id and destination_slot are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        query = """
+            UPDATE api_transaction
+            SET destination_slot = %s
+            WHERE transaction_id = %s;
+        """
+        execute_sql_query(query, [destination_slot, transaction_id])
+
+        return Response({"message": "Destination slot updated successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # YardSlotInfo
 @api_view(['GET'])
 def get_yard_slot_info(request):
