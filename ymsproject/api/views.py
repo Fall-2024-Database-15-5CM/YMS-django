@@ -20,9 +20,9 @@ import psutil
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-
 from django.db.models import Q
 from datetime import date
+
 def home(request):
     return HttpResponse("YMS API")
 
@@ -211,7 +211,6 @@ def get_sorted_transactions(request):
         'transactions': serializer.data  # 현재 페이지의 트랜잭션 데이터
     }, status=status.HTTP_200_OK)
 
-
 @api_view(['GET'])
 def get_driver_details(request):
     # 쿼리 파라미터에서 driver_id 가져오기
@@ -381,51 +380,60 @@ def get_chassis(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Chassis Flip
-@api_view(['POST'])
-def chassis_flip(request):
-    source_slot_id = request.data.get('source_slot_id')
-    destination_slot_id = request.data.get('destination_slot_id')
+def execute_sql_query(query, params):
+    """
+    SQL 쿼리 실행하는 함수
+    Args:
+        query (str): 실행할 SQL 쿼리
+        params (list): 쿼리에 전달할 파라미터
 
-    if not source_slot_id or not destination_slot_id:
-        return Response({"error": "Both source_slot_id and destination_slot_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+    Returns:
+        None
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(query, params)
+
+# chassis_flip_sql
+@api_view(['POST'])
+def chassis_flip_sql(request):
+    """
+    Args:
+        chassis_id1 (str): The source chassis ID.
+        chassis_id2 (str): The destination chassis ID.
+
+    Returns:
+        Response: A JSON response with a success message or an error.
+    """
+    # chassis_id1, chassis_id2 가져오기
+    chassis_id1 = request.data.get('chassis_id1')
+    chassis_id2 = request.data.get('chassis_id2')
+
+    if not chassis_id1 or not chassis_id2:
+        return Response({"error": "chassis_id1 and chassis_id2 are required."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # 슬롯 정보 조회
-        slots = Slot.objects.filter(slot_id__in=[source_slot_id, destination_slot_id])
-        if len(slots) < 2:
-            return Response({"error": "Invalid slot IDs provided."}, status=status.HTTP_404_NOT_FOUND)
+        query1 = """
+            UPDATE api_chassis
+            SET container_id = (
+                SELECT t.container_id 
+                FROM (SELECT container_id FROM api_chassis WHERE chassis_id = %s) AS t
+            )
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query1, [chassis_id1, chassis_id2])
 
-        # 슬롯 좌표 추출
-        source_slot = next(slot for slot in slots if slot.slot_id == source_slot_id)
-        destination_slot = next(slot for slot in slots if slot.slot_id == destination_slot_id)
+        query2 = """
+            UPDATE api_chassis 
+            SET container_id = NULL 
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query2, [chassis_id1])
 
-        # 거리 계산
-        distance = calculate_distance(source_slot.x, source_slot.y, destination_slot.x, destination_slot.y)
-
-        # 이동 가능 여부 확인
-        if not is_slot_empty(destination_slot_id):
-            return Response({"error": "Destination slot is not empty."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Chassis 이동 처리
-        chassis = Chassis.objects.filter(slot_id=source_slot_id).first()
-        if not chassis:
-            return Response({"error": "No chassis found in source slot."}, status=status.HTTP_404_NOT_FOUND)
-
-        # 슬롯 업데이트
-        chassis.slot_id = destination_slot_id
-        chassis.save()
-
-        return Response({
-            "message": "Chassis flipped successfully.",
-            "distance": distance,
-            "source_slot_id": source_slot_id,
-            "destination_slot_id": destination_slot_id
-        }, status=status.HTTP_200_OK)
+        return Response({"message": "Chassis flip successfully executed."}, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        
 # Container
 @api_view(['GET', 'POST'])
 def get_containers(request):
