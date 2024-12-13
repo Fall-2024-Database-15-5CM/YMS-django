@@ -588,7 +588,10 @@ def get_equipment_details(request):
         return Response({"type": "truck", "data": serializer.data}, status=status.HTTP_200_OK)
     elif equipment2:
         serializer = ChassisSerializer(equipment2)
-        return Response({"type": "chassis", "data": serializer.data}, status=status.HTTP_200_OK)
+        # if serializer.data.get("container_id",None):
+        container = ContainerSerializer(Container.objects.filter(container_id = serializer.data['container_id']).first()).data
+        serializer.data['container']=container
+        return Response({"type": "chassis", "data": serializer.data,'container':container}, status=status.HTTP_200_OK)
     elif equipment3:
         serializer = ContainerSerializer(equipment3)
         return Response({"type": "container", "data": serializer.data}, status=status.HTTP_200_OK)

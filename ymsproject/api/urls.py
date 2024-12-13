@@ -25,14 +25,14 @@ urlpatterns = [
     # path('transaction/details-transaction', views.get_transaction_details, name='transaction_details'),
     # path('transaction/history', views.transaction_transaction_history, name='transaction_history'),
     path('transaction/set-destination-slot', views.set_destination_slot, name='set_destination_slot'),
-    path('transaction/update-state', views.update_transaction_state, name='update_transaction_state'),
+    # path('transaction/update-state', views.update_transaction_state, name='update_transaction_state'),
     
     # Equipment Endpoints
     path('equipment/equipment-details', views.get_equipment_details, name='get_equipment_details'),
     path('equipment/sorted', views.get_sorted_equipments, name='get_sorted_equipments'),
     path('equipment/history', views.equipment_transaction_history, name='equipment_transaction_history'),  # Equipment transaction history
-    path('equipment/chassis-flip', views.chassis_flip_sql, name='chassis_flip'),
-    path('equipment/move', views.move_equipment, name='move_equipment'),
+    path('livemap/chassis-flip', views.chassis_flip_sql, name='chassis_flip'),
+    path('livemap/move', views.move_equipment, name='move_equipment'),
     
     # User Endpoints
     path('user/signup', views.user_signup, name='user_signup'),
