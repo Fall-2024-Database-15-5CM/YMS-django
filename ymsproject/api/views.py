@@ -495,6 +495,15 @@ def get_slot_updates(request):
 def set_destination_slot(request):
     transaction_id = request.data.get('transaction_id')
     destination_slot = request.data.get('destination_slot')
+    destination_type = request.data.get('destination_type')
+    if destination_type == 'truck':
+        destination_type = "destination_slot"
+    elif destination_type == 'chassis':
+        destination_type = "destination_equipment_slot"
+    elif destination_type == 'trailer':
+        destination_type = "destination_equipment_slot" 
+    elif destination_type == 'container':
+        destination_type = "destination_child_equipment_slot"
 
     if not transaction_id or not destination_slot:
         return Response({"error": "transaction_id and destination_slot are required."}, status=status.HTTP_400_BAD_REQUEST)

@@ -13,6 +13,7 @@ urlpatterns = [
     path('livemap/is-updated', views.get_slot_isupdated, name='get_slot_isupdated'),
     path('livemap/current-state', views.current_slot_state, name='current_slot_state'),
     path('livemap/process-list', views.get_livemap_not_end, name='get_livemap_not_end'),
+    path('livemap/set-destination-slot', views.set_destination_slot, name='set_destination_slot'),
     
     
     # Driver Endpoints
@@ -26,7 +27,6 @@ urlpatterns = [
     # path('transaction/create', views.create_transaction, name='create_transaction'),
     # path('transaction/details-transaction', views.get_transaction_details, name='transaction_details'),
     # path('transaction/history', views.transaction_transaction_history, name='transaction_history'),
-    path('transaction/set-destination-slot', views.set_destination_slot, name='set_destination_slot'),
     # path('transaction/update-state', views.update_transaction_state, name='update_transaction_state'),
     
     # Equipment Endpoints
