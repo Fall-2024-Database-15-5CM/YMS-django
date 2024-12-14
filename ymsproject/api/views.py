@@ -500,25 +500,22 @@ def set_destination_slot(request):
         destination_type = "destination_slot"
     elif destination_type == 'chassis':
         destination_type = "destination_equipment_slot"
-    elif destination_type == 'trailer':
+    elif destination_type == 'equipment':
         destination_type = "destination_equipment_slot" 
-    elif destination_type == 'container':
+    elif destination_type == 'child_equipment':
         destination_type = "destination_child_equipment_slot"
 
     if not transaction_id or not destination_slot:
         return Response({"error": "transaction_id and destination_slot are required."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        query = """
-            UPDATE api_transaction
-            SET destination_slot = %s
-            WHERE transaction_id = %s;
+        query = f"""UPDATE api_transaction SET {destination_type} = '{destination_slot}' WHERE transaction_id = '{transaction_id}';
         """
-        execute_sql_query(query, [destination_slot, transaction_id])
+        execute_sql_query(query,[])
 
         return Response({"message": "Destination slot updated successfully."}, status=status.HTTP_200_OK)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": str(e),"sql":query}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # YardSlotInfo
 @api_view(['GET'])
@@ -1177,7 +1174,19 @@ def get_livemap_not_end(request):
     # Define common fields for validation
     yard_id = request.query_params.get('yard_id')
     with connection.cursor() as cursor:
-            cursor.execute(f"""select * from api_transaction where state !="End" and destination_id="{yard_id}" order by destination_slot asc;""")
+            cursor.execute(f"""SELECT *
+FROM api_transaction
+WHERE state != 'End'
+  AND destination_id = '{yard_id}'
+ORDER BY 
+    (
+        (destination_slot IS NULL)
+        OR (destination_equipment_slot IS NULL)
+        OR (destination_child_equipment_slot IS NULL and child_equipment_id)
+    ) DESC,
+    transaction_id desc;
+
+""")
 
             # rows = cursor.fetchall()
             columns = [col[0] for col in cursor.description]
