@@ -729,13 +729,14 @@ def current_slot_state(request):
     empty_slot_ids = [slot_id for slot_id in slot_ids if slot_id not in occupied_slot_ids]
     empty_slots = [{"slot_id": slot_id} for slot_id in empty_slot_ids]
 
+    in_scheduled_equipment_slot_ids = Transaction.objects.filter(destination_equipment_slot__isnull=False)
+    in_scheduled__child_slot_ids = Transaction.objects.filter(destination_child_equipment_slot__isnull=False)
     in_scheduled_slot_ids = Transaction.objects.filter(destination_slot__isnull=False)
 
-    in_scheduled_slot_ids = set([transaction.destination_slot for transaction in in_scheduled_slot_ids])
+    in_scheduled_slot_ids = set([transaction.destination_slot for transaction in in_scheduled_slot_ids]+[transaction.destination_equipment_slot for transaction in in_scheduled_equipment_slot_ids]+[transaction.destination_child_equipment_slot for transaction in in_scheduled__child_slot_ids])
     empty_slots = [{"slot_id": slot_id, "state":"In-Scheduled" if slot_id in in_scheduled_slot_ids else "empty"} for slot_id in empty_slot_ids]
     empty_slots = [{"slot_id": slot_id, "state":"In-Scheduled" if slot_id in in_scheduled_slot_ids else str(in_scheduled_slot_ids)} for slot_id in empty_slot_ids]
     
-
     # 모든 데이터를 합쳐서 반환
     combined_data = {
         "data": {

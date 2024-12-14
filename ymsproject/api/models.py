@@ -111,6 +111,8 @@ class Transaction(models.Model):
     source_slot = models.IntegerField()
     destination = models.ForeignKey(Yard, related_name='destination', on_delete=models.SET_NULL, null=True)
     destination_slot = models.IntegerField()
+    destination_equipment_slot = models.IntegerField()
+    destination_child_equipment_slot = models.IntegerField()
     datetime = models.DateTimeField(default=timezone.now)
     datetime_end = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now,)
