@@ -35,6 +35,8 @@ urlpatterns = [
     path('equipment/history', views.equipment_transaction_history, name='equipment_transaction_history'),  # Equipment transaction history
     path('livemap/chassis-flip', views.chassis_flip_sql, name='chassis_flip'),
     path('livemap/move', views.move_equipment, name='move_equipment'),
+    path('livemap/connect', views.connect_container, name='connect_container'),
+    path('livemap/disconnect', views.disconnect_container, name='disconnect_container'),
     
     # User Endpoints
     path('user/signup', views.user_signup, name='user_signup'),

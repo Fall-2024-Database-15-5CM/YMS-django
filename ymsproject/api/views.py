@@ -1194,3 +1194,78 @@ ORDER BY
             rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     return Response({'data':rows,}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def connect_container(request):
+    """
+    Args:
+        chassis_id1 (str): The source chassis ID.
+        chassis_id2 (str): The destination chassis ID.
+
+    Returns:
+        Response: A JSON response with a success message or an error.
+    """
+    # chassis_id1, chassis_id2 가져오기
+    chassis_id1 = request.data.get('chassis_id')
+    chassis_id2 = request.data.get('container_id')
+
+    try:
+        query1 = """
+            UPDATE api_container
+            SET slot = (
+                SELECT t.slot 
+                FROM (SELECT slot FROM api_chassis WHERE chassis_id = %s) AS t
+            )
+            WHERE container_id = %s;
+        """
+        execute_sql_query(query1, [chassis_id1, chassis_id2])
+
+        query2 = """
+            UPDATE api_chassis 
+            SET container_id = %s
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query2, [chassis_id2,chassis_id1])
+
+        return Response({"message": "connect container successfully executed."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+
+@api_view(['POST'])
+def disconnect_container(request):
+    """
+    Args:
+        chassis_id1 (str): The source chassis ID.
+        chassis_id2 (str): The destination chassis ID.
+
+    Returns:
+        Response: A JSON response with a success message or an error.
+    """
+    # chassis_id1, chassis_id2 가져오기
+    chassis_id1 = request.data.get('chassis_id')
+    chassis_id2 = request.data.get('container_id')
+    container_slot = request.data.get('slot')
+
+    try:
+        query1 = """
+            UPDATE api_container
+            SET slot = %s
+            WHERE container_id = %s;
+        """
+        execute_sql_query(query1, [container_slot, chassis_id2])
+
+        query2 = """
+            UPDATE api_chassis 
+            SET container_id = NULL
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query2, [chassis_id1])
+
+        return Response({"message": "connect container successfully executed."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
