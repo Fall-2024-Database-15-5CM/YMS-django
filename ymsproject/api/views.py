@@ -149,7 +149,10 @@ def get_sorted_drivers(request):
     for driver in data:
         iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
         if iso_time_str:
-            dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
+            except:
+                dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%S.%fZ')
             readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
             driver["updated_at"] = readable_format
 
