@@ -9,3 +9,6 @@ admin.site.register(Truck)
 admin.site.register(Trailer)
 admin.site.register(Container)
 admin.site.register(Driver)
+admin.site.register(Division)
+admin.site.register(Chassis)
+# 

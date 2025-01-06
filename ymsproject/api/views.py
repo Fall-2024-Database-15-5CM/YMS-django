@@ -1,3 +1,4 @@
+from django.utils.timezone import now
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -19,9 +20,9 @@ import psutil
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-
 from django.db.models import Q
 from datetime import date
+
 def home(request):
     return HttpResponse("YMS API")
 
@@ -82,7 +83,6 @@ def get_slots(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 # Structure
 @api_view(['GET', 'POST'])
 def get_structures(request):
@@ -115,12 +115,24 @@ def get_drivers(request):
 @api_view(['GET'])
 def get_sorted_drivers(request):
     # Query parameters 받기
-    order_by = request.query_params.get('order_by', 'name')  # 기본 정렬 필드
-    page = request.query_params.get('page', 1)  # 기본 페이지 번호
-    # Driver 쿼리셋 정렬 적용
-    drivers = Driver.objects.all().order_by(order_by)
+    order_by = request.query_params.get('order_by', 'name')  
+    page = request.query_params.get('page', 1)  
+    filter_param = request.query_params.get('filter', None)  
 
-    # 페이지네이션 (8개씩 나누기)
+    # Driver 쿼리셋 초기화
+    drivers = Driver.objects.all()
+
+    if filter_param:
+        drivers = drivers.filter(
+            Q(driver_id__icontains=filter_param) |
+            Q(name__icontains=filter_param) |
+            Q(phone__icontains=filter_param) |
+            Q(state__icontains=filter_param)
+        )
+
+    drivers = drivers.order_by(order_by)
+
+    # 페이지네이션 (10개씩 나누기)
     paginator = Paginator(drivers, 10)
     try:
         drivers_page = paginator.page(page)
@@ -128,20 +140,23 @@ def get_sorted_drivers(request):
         drivers_page = paginator.page(1)
     except EmptyPage:
         drivers_page = paginator.page(paginator.num_pages)
-    
 
+    # DriverSerializer 사용해 데이터 직렬화
     serializer = DriverSerializer(drivers_page, many=True, fields=['driver_id', 'name', 'phone', 'updated_at', 'state', 'thumbnail'])
     data = serializer.data
 
-    # 각 드라이버의 'created_at' 필드 변환
+    # 각 드라이버의 'updated_at' 필드 변환
     for driver in data:
         iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
         if iso_time_str:
-            dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
+            except:
+                dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%S.%fZ')
             readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
             driver["updated_at"] = readable_format
 
-
+    # Response 데이터 반환
     return Response({
         'page': int(page),  # 현재 페이지 번호 반환
         'total_pages': paginator.num_pages,  # 전체 페이지 수
@@ -152,39 +167,51 @@ def get_sorted_drivers(request):
 # sorted transaction
 @api_view(['GET'])
 def get_sorted_transactions(request):
-    # Query parameters 받기
-    order_by = request.query_params.get('order_by', 'transaction_id')  # 기본 정렬 필드
-    page = request.query_params.get('page', 1)  # 기본 페이지 번호
-    # Driver 쿼리셋 정렬 적용
-    drivers = Transaction.objects.all().order_by(order_by)
+    order_by = request.query_params.get('order_by', 'transaction_id')  
+    page = request.query_params.get('page', 1)  
+    filter_param = request.query_params.get('filter', None)  
 
-    # 페이지네이션 (8개씩 나누기)
-    paginator = Paginator(drivers, 10)
+    transactions = Transaction.objects.all()
+
+    if filter_param:
+        transactions = transactions.filter(
+            Q(transaction_id__icontains=filter_param) |
+            Q(driver_id__driver_id__icontains=filter_param) |
+            Q(truck_id__icontains=filter_param) |
+            Q(equipment_id__icontains=filter_param) |
+            Q(child_equipment_id__icontains=filter_param) |
+            Q(source__yard_id__icontains=filter_param) |
+            Q(destination__yard_id__icontains=filter_param) |
+            Q(state__icontains=filter_param)
+        )
+
+    transactions = transactions.order_by(order_by)
+
+    # 페이지네이션 (10개씩 나누기)
+    paginator = Paginator(transactions, 10)
     try:
-        drivers_page = paginator.page(page)
+        transactions_page = paginator.page(page)
     except PageNotAnInteger:
-        drivers_page = paginator.page(1)
+        transactions_page = paginator.page(1)
     except EmptyPage:
-        drivers_page = paginator.page(paginator.num_pages)
-    
+        transactions_page = paginator.page(paginator.num_pages)
 
-    serializer = TransactionSerializer(drivers_page, many=True)
+    serializer = TransactionSerializer(transactions_page, many=True)
     data = serializer.data
 
-    # 각 드라이버의 'created_at' 필드 변환
-    for driver in data:
-        iso_time_str = driver.get("updated_at", None)  # 예시로 'updated_at' 필드 사용
+    # 각 트랜잭션의 'updated_at' 필드 변환
+    for transaction in data:
+        iso_time_str = transaction.get("updated_at", None)  
         if iso_time_str:
             dt = datetime.strptime(iso_time_str, '%Y-%m-%dT%H:%M:%SZ')
             readable_format = dt.strftime("%m월 %d일 %H:%M:%S")
-            driver["updated_at"] = readable_format
-
+            transaction["updated_at"] = readable_format
 
     return Response({
         'page': int(page),  # 현재 페이지 번호 반환
         'total_pages': paginator.num_pages,  # 전체 페이지 수
-        'total_transactions': paginator.count,  # 전체 드라이버 수
-        'transactions': serializer.data  # 현재 페이지의 드라이버 데이터
+        'total_transactions': paginator.count,  # 전체 트랜잭션 수
+        'transactions': serializer.data  # 현재 페이지의 트랜잭션 데이터
     }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
@@ -356,6 +383,60 @@ def get_chassis(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+def execute_sql_query(query, params):
+    """
+    SQL 쿼리 실행하는 함수
+    Args:
+        query (str): 실행할 SQL 쿼리
+        params (list): 쿼리에 전달할 파라미터
+
+    Returns:
+        None
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(query, params)
+
+# chassis_flip_sql
+@api_view(['POST'])
+def chassis_flip_sql(request):
+    """
+    Args:
+        chassis_id1 (str): The source chassis ID.
+        chassis_id2 (str): The destination chassis ID.
+
+    Returns:
+        Response: A JSON response with a success message or an error.
+    """
+    # chassis_id1, chassis_id2 가져오기
+    chassis_id1 = request.data.get('chassis_id1')
+    chassis_id2 = request.data.get('chassis_id2')
+
+    if not chassis_id1 or not chassis_id2:
+        return Response({"error": "chassis_id1 and chassis_id2 are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        query1 = """
+            UPDATE api_chassis
+            SET container_id = (
+                SELECT t.container_id 
+                FROM (SELECT container_id FROM api_chassis WHERE chassis_id = %s) AS t
+            )
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query1, [chassis_id1, chassis_id2])
+
+        query2 = """
+            UPDATE api_chassis 
+            SET container_id = NULL 
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query2, [chassis_id1])
+
+        return Response({"message": "Chassis flip successfully executed."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 # Container
 @api_view(['GET', 'POST'])
 def get_containers(request):
@@ -412,8 +493,32 @@ def get_slot_updates(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# set_destination_slot
+@api_view(['POST'])
+def set_destination_slot(request):
+    transaction_id = request.data.get('transaction_id')
+    destination_slot = request.data.get('destination_slot')
+    destination_type = request.data.get('destination_type')
+    if destination_type == 'truck':
+        destination_type = "destination_slot"
+    elif destination_type == 'chassis':
+        destination_type = "destination_equipment_slot"
+    elif destination_type == 'equipment':
+        destination_type = "destination_equipment_slot" 
+    elif destination_type == 'child_equipment':
+        destination_type = "destination_child_equipment_slot"
 
+    if not transaction_id or not destination_slot:
+        return Response({"error": "transaction_id and destination_slot are required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        query = f"""UPDATE api_transaction SET {destination_type} = '{destination_slot}' WHERE transaction_id = '{transaction_id}';
+        """
+        execute_sql_query(query,[])
+
+        return Response({"message": "Destination slot updated successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e),"sql":query}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # YardSlotInfo
 @api_view(['GET'])
@@ -470,7 +575,6 @@ def get_yard_slot_info(request):
         # 오류 발생 시 에러 메시지 반환
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-
 # get_equipment_details
 @api_view(['GET'])
 def get_equipment_details(request):
@@ -493,7 +597,10 @@ def get_equipment_details(request):
         return Response({"type": "truck", "data": serializer.data}, status=status.HTTP_200_OK)
     elif equipment2:
         serializer = ChassisSerializer(equipment2)
-        return Response({"type": "chassis", "data": serializer.data}, status=status.HTTP_200_OK)
+        # if serializer.data.get("container_id",None):
+        container = ContainerSerializer(Container.objects.filter(container_id = serializer.data['container_id']).first()).data
+        serializer.data['container']=container
+        return Response({"type": "chassis", "data": serializer.data,'container':container}, status=status.HTTP_200_OK)
     elif equipment3:
         serializer = ContainerSerializer(equipment3)
         return Response({"type": "container", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -504,6 +611,66 @@ def get_equipment_details(request):
     # If no equipment is found, return a 404 response
     return Response({"error": "장비를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
+# move equipment
+@api_view(['POST'])
+def move_equipment(request):
+    """
+    Yard 내부에서 Truck 또는 Trailer 등의 장비 이동
+    """
+    # 입력 파라미터 가져오기
+    equipment_id = request.data.get('equipment_id')
+    source_slot_id = request.data.get('source_slot_id')
+    destination_slot_id = request.data.get('destination_slot_id')
+
+    # 입력값 검증
+    if not all([equipment_id, source_slot_id, destination_slot_id]):
+        return Response({"error": "equipment_id, source_slot_id, and destination_slot_id are required."}, 
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 장비 조회 (Truck 또는 Trailer)
+        equipment = (Truck.objects.filter(truck_id=equipment_id).first() or
+                     Trailer.objects.filter(trailer_id=equipment_id).first() or
+                     Chassis.objects.filter(chassis_id=equipment_id).first() or
+                     Container.objects.filter(container_id=equipment_id).first())
+        
+        if not equipment:
+            return Response({"error": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 현재 슬롯 확인
+        if str(equipment.slot_id) != str(source_slot_id):
+            return Response({"error": f"Equipment is not located in source_slot_id: {source_slot_id}."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # 목표 슬롯 확인
+        destination_slot = Slot.objects.filter(slot_id=destination_slot_id).first()
+        if not destination_slot:
+            return Response({"error": f"Destination slot {destination_slot_id} does not exist."}, 
+                            status=status.HTTP_404_NOT_FOUND)
+        
+        if (Truck.objects.filter(slot_id=destination_slot_id).first() or
+            Trailer.objects.filter(slot_id=destination_slot_id).first() or
+            Chassis.objects.filter(slot_id=destination_slot_id).first() or
+            Container.objects.filter(slot_id=destination_slot_id).first()):
+        # if destination_slot.occupied:
+            return Response({"error": f"Destination slot {destination_slot_id} is already occupied."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # 슬롯 이동
+        equipment.slot_id = destination_slot_id
+        equipment.updated_at = now()
+        equipment.save()
+
+        # 결과 반환
+        return Response({
+            "message": "Equipment moved successfully.",
+            "equipment_id": equipment_id,
+            "source_slot_id": source_slot_id,
+            "destination_slot_id": destination_slot_id
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # SlotIsUpdated
 @api_view(['GET'])
@@ -571,8 +738,14 @@ def current_slot_state(request):
     empty_slot_ids = [slot_id for slot_id in slot_ids if slot_id not in occupied_slot_ids]
     empty_slots = [{"slot_id": slot_id} for slot_id in empty_slot_ids]
 
-    
+    in_scheduled_equipment_slot_ids = Transaction.objects.filter(destination_equipment_slot__isnull=False)
+    in_scheduled__child_slot_ids = Transaction.objects.filter(destination_child_equipment_slot__isnull=False)
+    in_scheduled_slot_ids = Transaction.objects.filter(destination_slot__isnull=False)
 
+    in_scheduled_slot_ids = set([transaction.destination_slot for transaction in in_scheduled_slot_ids]+[transaction.destination_equipment_slot for transaction in in_scheduled_equipment_slot_ids]+[transaction.destination_child_equipment_slot for transaction in in_scheduled__child_slot_ids])
+    empty_slots = [{"slot_id": slot_id, "state":"In-Scheduled" if slot_id in in_scheduled_slot_ids else "empty"} for slot_id in empty_slot_ids]
+    empty_slots = [{"slot_id": slot_id, "state":"In-Scheduled" if slot_id in in_scheduled_slot_ids else str(in_scheduled_slot_ids)} for slot_id in empty_slot_ids]
+    
     # 모든 데이터를 합쳐서 반환
     combined_data = {
         "data": {
@@ -582,7 +755,8 @@ def current_slot_state(request):
                     "state": truck["state"],
                     "created_at": truck["created_at"],
                     "updated_at": truck["updated_at"],
-                    "slot": truck["slot"]
+                    "slot": truck["slot"],
+                    "size": truck['size']
                 }
                 for truck in truck_serializer.data
             ],
@@ -593,7 +767,8 @@ def current_slot_state(request):
                     "container_id": chassis["container_id"],
                     "created_at": chassis["created_at"],
                     "updated_at": chassis["updated_at"],
-                    "slot": chassis["slot"]
+                    "slot": chassis["slot"],
+                    "size": chassis["size"]
                 }
                 for chassis in chassis_serializer.data
             ],
@@ -601,7 +776,7 @@ def current_slot_state(request):
                 {
                     "container_id": container["container_id"],
                     "state": container["state"],
-                    "container_size": container["container_size"],
+                    "size": container["size"],
                     "created_at": container["created_at"],
                     "updated_at": container["updated_at"],
                     "slot": container["slot"]
@@ -612,7 +787,7 @@ def current_slot_state(request):
                 {
                     "trailer_id": trailer["trailer_id"],
                     "state": trailer["state"],
-                    "trailer_size": trailer["trailer_size"],
+                    "size": trailer["size"],
                     "created_at": trailer["created_at"],
                     "updated_at": trailer["updated_at"],
                     "slot": trailer["slot"]
@@ -629,64 +804,84 @@ def current_slot_state(request):
 @api_view(['GET'])
 def get_sorted_equipments(request):
     # Define common fields for validation
-    valid_order_fields = {'updated_at', 'state', 'slot'}
 
     # Retrieve query parameters
     order_by = request.query_params.get('order_by', 'updated_at')
-    page = request.query_params.get('page', 1)
+    order_type = request.query_params.get('order_type', 'asc')
+    
+    page = int(request.query_params.get('page', 1))-1
+    filter_param = request.query_params.get('filter', '') 
+    with connection.cursor() as cursor:
+            cursor.execute(f"""SELECT 
+                                t.id, 
+                                t.vehicle, 
+                                t.slot_id,
+                                t.size, 
+                                CONCAT(api_slot.yard_id, '-', api_slot.slot_num) AS location,
+                                t.connect,
+                                t.state, 
+                                t.updated_at
+                           FROM (
+                                SELECT chassis_id AS id, 'chassis' AS vehicle,size, slot_id, updated_at, state,container_id AS connect FROM api_chassis
+                                UNION
+                                SELECT trailer_id AS id, 'trailer' AS vehicle,size, slot_id, updated_at, state,Null AS connect FROM api_trailer
+                                UNION
+                                SELECT truck_id AS id, 'truck' AS vehicle,size, slot_id, updated_at, state,Null AS connect FROM api_truck
+                                UNION
+                                SELECT container_id AS id, 'container' AS vehicle,size, slot_id, updated_at, state,Null AS connect FROM api_container
+                            ) as t
+                            JOIN api_slot
+                            ON t.slot_id = api_slot.slot_id
+                            WHERE 
+                                t.id LIKE '%{filter_param}%' OR
+                                t.vehicle LIKE '%{filter_param}%' OR
+                                t.slot_id LIKE '%{filter_param}%' OR
+                                CONCAT(api_slot.yard_id, '-', api_slot.slot_num) LIKE '%{filter_param}%' OR
+                                t.state LIKE '%{filter_param}%' OR
+                                t.updated_at LIKE '%{filter_param}%'
+                            order by {order_by} {order_type};
+                            """)
+
+            # rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            # 데이터 매핑 (딕셔너리로 변환)
+            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     # Validate order_by field
-    if order_by not in valid_order_fields:
-        return Response({
-            'error': f"Invalid order_by field. Allowed fields are: {', '.join(valid_order_fields)}"
-        }, status=status.HTTP_400_BAD_REQUEST)
+    # if order_by not in valid_order_fields:
+    #     return Response({
+    #         'error': f"Invalid order_by field. Allowed fields are: {', '.join(valid_order_fields)}"
+    #     }, status=status.HTTP_400_BAD_REQUEST)
 
     # Combine equipment data from all models
-    all_equipments = [
-        {"type": "truck", "data": truck} for truck in Truck.objects.all()
-    ] + [
-        {"type": "chassis", "data": chassis} for chassis in Chassis.objects.all()
-    ] + [
-        {"type": "container", "data": container} for container in Container.objects.all()
-    ] + [
-        {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
-    ]
-    # Apply sorting based on the provided order_by field
-    all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
+    # all_equipments = [
+    #     {"type": "truck", "data": truck} for truck in Truck.objects.all()
+    # ] + [
+    #     {"type": "chassis", "data": chassis} for chassis in Chassis.objects.all()
+    # ] + [
+    #     {"type": "container", "data": container} for container in Container.objects.all()
+    # ] + [
+    #     {"type": "trailer", "data": trailer} for trailer in Trailer.objects.all()
+    # ]
 
-    # Apply pagination
-    paginator = Paginator(all_equipments, 10)  # 10 items per page
-    try:
-        equipments_page = paginator.page(page)
-    except PageNotAnInteger:
-        equipments_page = paginator.page(1)
-    except EmptyPage:
-        equipments_page = paginator.page(paginator.num_pages)
+    # if filter_param:
+    #     all_equipments = [
+    #         equipment for equipment in all_equipments
+    #         if filter_param.lower() in str(equipment["data"]).lower()
+    #     ]
 
-    # Serialize the paginated data
-    serializer = GenericEquipmentSerializer(equipments_page, many=True)
+    # # Apply sorting based on the provided order_by field
+    # all_equipments.sort(key=lambda x: getattr(x["data"], order_by, None))
 
-    modified_data = serializer.data
-
-    for equipment in modified_data:
-        slot_id = equipment['data'].get("slot")  # Serialized data에서 slot 값을 가져옴
-        if slot_id:
-            try:
-                # Find the corresponding Slot object
-                slot = Slot.objects.get(slot_id=slot_id)
-                # Replace the `slot` value with "yard-slot_num" format
-                equipment['data']["slot"] = f"{slot.yard.yard_id}-{slot.slot_num}"
-            except Slot.DoesNotExist:
-                # If no matching Slot is found, set a default value
-                equipment['data']["slot"] = "Not found"
-            equipment['data']["slot_id"] = slot_id  # Add the original slot_id value
-
-    # Return paginated and structured response
+    # # Apply pagination
+    total_equipments = len(rows)
+    total_pages = total_equipments//10
+    equipment = rows[10*page:10*page+10]
     return Response({
         'page': int(page),
-        'total_pages': paginator.num_pages,
-        'total_equipments': paginator.count,
-        'equipments': modified_data,
+        'total_pages': total_pages,
+        'total_equipments': total_equipments,
+        'equipments': equipment,
     }, status=status.HTTP_200_OK)
 
 # driver-details-history
@@ -701,6 +896,56 @@ def driver_transaction_history(request):
     
     # driver_id에 해당하는 Transaction 조회
     transactions = Transaction.objects.filter(driver_id=driver_id).select_related('driver', 'source', 'destination').order_by('-created_at')
+    
+    # 조회된 Transaction 없으면 404
+    if not transactions.exists():
+        return Response({"error": "There are no transactions for that Driver ID."}, status=status.HTTP_404_NOT_FOUND)
+    
+    # 응답 데이터 생성
+    transaction_list = []
+    for txn in transactions:
+        transaction_data = {
+            "transaction_id": txn.transaction_id,
+            "driver_id": txn.driver.driver_id,
+            "driver_name": txn.driver.name,
+            "truck_id": txn.truck_id,
+            "equipment_id": txn.equipment_id,
+            "child_equipment_id": txn.child_equipment_id,
+            "source": {
+                "yard_id": txn.source.yard_id if txn.source else None,
+                "yard_name": txn.source.yard_name if txn.source else None
+            } if txn.source else None,
+            "destination": {
+                "yard_id": txn.destination.yard_id if txn.destination else None,
+                "yard_name": txn.destination.yard_name if txn.destination else None
+            } if txn.destination else None,
+            "datetime": txn.datetime.isoformat(),
+            "created_at": txn.created_at.isoformat()
+        }
+        transaction_list.append(transaction_data)
+    
+    return Response(transaction_list, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def equipment_transaction_history(request):
+    # 쿼리 파라미터에서 driver_id 가져오기
+    equipment_id = request.query_params.get('equipment_id')
+    
+    # driver_id 제공되지 않으면 에러
+    if not equipment_id:
+        return Response({"error": "Please enter the Equipment ID."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # driver_id에 해당하는 Transaction 조회
+    transactions = (
+    Transaction.objects.filter(
+        Q(truck_id=equipment_id) |
+        Q(equipment_id=equipment_id) |
+        Q(child_equipment_id=equipment_id)
+    )
+    # .select_related('driver', 'source', 'destination')
+    .order_by('-created_at')
+)
     
     # 조회된 Transaction 없으면 404
     if not transactions.exists():
@@ -775,7 +1020,6 @@ def user_login(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 def server_status(request):
     # CPU와 메모리 사용량 정보를 가져오기
     cpu_usage = psutil.cpu_percent(interval=1)  # 1초 동안 CPU 사용률 측정
@@ -814,9 +1058,62 @@ def get_recent_transaction(request):
     transactions = Transaction.objects.order_by('-datetime')[:n]
     data = TransactionSerializer(transactions, many=True).data
 
-
-    # 결과 반환
     return Response(data, status=status.HTTP_200_OK)
+
+
+# TMS current_map
+@api_view(['GET'])
+def get_current_map(request):
+    transaction_id = request.query_params.get('transaction_id', None)
+
+    if not transaction_id:
+        return Response({
+            "error": "Required parameters are missing.: transaction_id"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT yard_id, lat, lon
+                FROM api_yard
+                WHERE yard_id IN (
+                    SELECT source_id 
+                    FROM api_transaction 
+                    WHERE transaction_id = %s
+                    UNION
+                    SELECT destination_id 
+                    FROM api_transaction 
+                    WHERE transaction_id = %s
+                );
+            """, [transaction_id, transaction_id])
+
+            rows = cursor.fetchall()
+
+        results = [{"yard_id": row[0], "lat": row[1], "lon": row[2]} for row in rows]
+
+        if len(results) < 2:
+            return Response({
+                "error": "There is not enough data to calculate a midway point. At a minimum, a starting point and a destination are required."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 중간 위치 계산 (위도, 경도 평균값)
+        avg_lat = sum(float(item["lat"]) for item in results) / len(results)
+        avg_lon = sum(float(item["lon"]) for item in results) / len(results)
+
+        # "NOW"로 현재 차량 위치 추가
+        results.append({
+            "yard_id": "NOW",
+            "lat": round(avg_lat, 6),
+            "lon": round(avg_lon, 6)
+        })
+
+        return Response({"yards": results}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['POST'])
 def update_weather(request):
@@ -846,7 +1143,7 @@ def get_weather(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-def get_today_summery(request):
+def get_today_summary(request):
     # datetime 필드의 날짜가 오늘이거나 datetime_end 필드의 날짜가 오늘인 경우
     today_transactions = Transaction.objects.filter(Q(datetime__date=date.today()) | Q(datetime_end__date=date.today()))
     # 'Reservation','Processing','End'
@@ -857,3 +1154,121 @@ def get_today_summery(request):
         'End': today_transactions.filter(state='End').count()
     }
     return Response(today_summery, status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+def get_processing_transaction(request):
+    # Define common fields for validation
+
+    with connection.cursor() as cursor:
+            cursor.execute(f"""select transaction_id, datetime,source_id, destination_id from api_transaction where state = 'Processing' order by datetime limit 6;
+                            """)
+
+            # rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            # 데이터 매핑 (딕셔너리로 변환)
+            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    return Response({'data':rows,}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_livemap_not_end(request):
+    # Define common fields for validation
+    yard_id = request.query_params.get('yard_id')
+    with connection.cursor() as cursor:
+            cursor.execute(f"""SELECT *
+FROM api_transaction
+WHERE state != 'End'
+  AND destination_id = '{yard_id}'
+ORDER BY 
+    (
+        (destination_slot IS NULL)
+        OR (destination_equipment_slot IS NULL)
+        OR (destination_child_equipment_slot IS NULL and child_equipment_id)
+    ) DESC,
+    transaction_id desc;
+
+""")
+
+            # rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            # 데이터 매핑 (딕셔너리로 변환)
+            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    return Response({'data':rows,}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def connect_container(request):
+    """
+    Args:
+        chassis_id1 (str): The source chassis ID.
+        chassis_id2 (str): The destination chassis ID.
+
+    Returns:
+        Response: A JSON response with a success message or an error.
+    """
+    # chassis_id1, chassis_id2 가져오기
+    chassis_id1 = request.data.get('chassis_id')
+    chassis_id2 = request.data.get('container_id')
+
+    try:
+        query1 = """
+            UPDATE api_container
+            SET slot = (
+                SELECT t.slot 
+                FROM (SELECT slot FROM api_chassis WHERE chassis_id = %s) AS t
+            )
+            WHERE container_id = %s;
+        """
+        execute_sql_query(query1, [chassis_id1, chassis_id2])
+
+        query2 = """
+            UPDATE api_chassis 
+            SET container_id = %s
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query2, [chassis_id2,chassis_id1])
+
+        return Response({"message": "connect container successfully executed."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+
+@api_view(['POST'])
+def disconnect_container(request):
+    """
+    Args:
+        chassis_id1 (str): The source chassis ID.
+        chassis_id2 (str): The destination chassis ID.
+
+    Returns:
+        Response: A JSON response with a success message or an error.
+    """
+    # chassis_id1, chassis_id2 가져오기
+    chassis_id1 = request.data.get('chassis_id')
+    chassis_id2 = request.data.get('container_id')
+    container_slot = request.data.get('slot')
+
+    try:
+        query1 = """
+            UPDATE api_container
+            SET slot = %s
+            WHERE container_id = %s;
+        """
+        execute_sql_query(query1, [container_slot, chassis_id2])
+
+        query2 = """
+            UPDATE api_chassis 
+            SET container_id = NULL
+            WHERE chassis_id = %s;
+        """
+        execute_sql_query(query2, [chassis_id1])
+
+        return Response({"message": "connect container successfully executed."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
